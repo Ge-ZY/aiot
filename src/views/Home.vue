@@ -64,13 +64,15 @@
           <div class="panel-title">天气信息</div>
           <div class="weather-content">
             <div class="weather-icon">☀️</div>
-            <div class="weather-info">
-              <div class="weather-temp">26°C</div>
-              <div class="weather-desc">晴</div>
-            </div>
-            <div class="weather-details">
-              <div>湿度: 65%</div>
-              <div>风向: 东北风 2级</div>
+            <div class="weather-right">
+              <div class="weather-info">
+                <div class="weather-temp">26°C</div>
+                <div class="weather-desc">晴</div>
+              </div>
+              <div class="weather-details">
+                <div>湿度: 65%</div>
+                <div>风向: 东北风 2级</div>
+              </div>
             </div>
           </div>
         </div>
@@ -196,8 +198,12 @@ const goToBarnDetail = (barn: any) => {
 const barnList = ref([
   { id: 1, name: '保育舍1', status: '正常', stock: 1200, temp: 24, humidity: 65, ventilation: 80 },
   { id: 2, name: '保育舍2', status: '正常', stock: 1150, temp: 25, humidity: 62, ventilation: 75 },
-  { id: 3, name: '分娩舍1', status: '正常', stock: 580, temp: 26, humidity: 70, ventilation: 85 },
-  { id: 4, name: '分娩舍2', status: '告警', stock: 620, temp: 28, humidity: 75, ventilation: 60 }
+  { id: 3, name: '保育舍3', status: '正常', stock: 1100, temp: 24, humidity: 68, ventilation: 82 },
+  { id: 4, name: '保育舍4', status: '告警', stock: 1080, temp: 27, humidity: 78, ventilation: 55 },
+  { id: 5, name: '分娩舍1', status: '正常', stock: 580, temp: 26, humidity: 70, ventilation: 85 },
+  { id: 6, name: '分娩舍2', status: '告警', stock: 620, temp: 28, humidity: 75, ventilation: 60 },
+  { id: 7, name: '分娩舍3', status: '正常', stock: 550, temp: 25, humidity: 68, ventilation: 88 },
+  { id: 8, name: '分娩舍4', status: '正常', stock: 560, temp: 26, humidity: 72, ventilation: 83 }
 ])
 
 const handleNodeClick = (data: any) => {
@@ -274,7 +280,7 @@ const handleNodeClick = (data: any) => {
 
 .bottom-section {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
 
@@ -283,6 +289,12 @@ const handleNodeClick = (data: any) => {
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .panel-header-row {
@@ -343,23 +355,32 @@ const handleNodeClick = (data: any) => {
 
 .weather-content {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding: 10px 0;
+  justify-content: center;
+  gap: 20px;
+  padding: 15px 10px;
 }
 
 .weather-icon {
   font-size: 48px;
-  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.weather-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .weather-info {
-  text-align: center;
-  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .weather-temp {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: bold;
   color: #333;
 }
@@ -372,8 +393,23 @@ const handleNodeClick = (data: any) => {
 .weather-details {
   font-size: 12px;
   color: #999;
-  text-align: center;
-  line-height: 1.8;
+  text-align: left;
+  line-height: 1.6;
+}
+
+.barn-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.barn-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #409eff, #67c23a);
 }
 
 .barn-header {
@@ -398,27 +434,34 @@ const handleNodeClick = (data: any) => {
 .barn-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 12px;
 }
 
 .barn-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
+  padding: 12px 10px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.barn-stat:hover {
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  transform: scale(1.02);
 }
 
 .barn-stat .label {
   font-size: 12px;
-  color: #999;
-  margin-bottom: 5px;
+  color: #888;
+  margin-bottom: 6px;
+  font-weight: 500;
 }
 
 .barn-stat .value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-size: 20px;
+  font-weight: 700;
+  color: #409eff;
 }
 </style>

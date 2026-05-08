@@ -269,7 +269,14 @@ const generateLast30Days = () => {
 const initChart = () => {
   if (!chartRef.value) return
   
-  chart = echarts.init(chartRef.value)
+  // 确保容器有尺寸
+  const container = chartRef.value
+  if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+    setTimeout(() => initChart(), 50)
+    return
+  }
+  
+  chart = echarts.init(container)
   const { dates, values } = generateLast30Days()
   
   const option: EChartsOption = {
@@ -327,6 +334,9 @@ const initChart = () => {
   }
   
   chart.setOption(option)
+  
+  // 确保图表正确渲染
+  chart.resize()
 }
 
 const refreshData = () => {
@@ -362,7 +372,9 @@ const handleResize = () => {
 
 onMounted(() => {
   nextTick(() => {
-    initChart()
+    setTimeout(() => {
+      initChart()
+    }, 100)
   })
   window.addEventListener('resize', handleResize)
 })
@@ -446,6 +458,11 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .panel-header {
@@ -497,11 +514,16 @@ onUnmounted(() => {
 .chart-panel {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .chart-container {
   flex: 1;
   min-height: 200px;
+  height: 100%;
+  width: 100%;
+  min-width: 0;
 }
 
 .list-panel {

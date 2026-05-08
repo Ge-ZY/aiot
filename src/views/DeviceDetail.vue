@@ -36,7 +36,7 @@
             <h3>仪器列表</h3>
           </div>
           <div class="header-right">
-            <el-button type="primary" @click="handleDebug">调试底层设备</el-button>
+            <!-- <el-button type="primary" @click="handleDebug">调试底层设备</el-button> -->
           </div>
         </div>
 
@@ -78,7 +78,6 @@
 
 <script setup lang="ts">
 import { ref, computed, markRaw } from 'vue'
-import { ElMessage } from 'element-plus'
 import { Search, Monitor, Document, Tools, Box, Coin, DataLine } from '@element-plus/icons-vue'
 
 const treeProps = {
@@ -192,9 +191,6 @@ const handleNodeClick = (data: any) => {
   }
 }
 
-const handleDebug = () => {
-  ElMessage.info('调试底层设备功能开发中...')
-}
 </script>
 
 <style scoped>

@@ -20,6 +20,8 @@
   "dependencies": {
     "@cpzxrobot/sdk": "^1.3.132",
     "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.16.0",
+    "chinese-global-compliant-geodata": "^1.0.0",
     "echarts": "^5.4.3",
     "element-plus": "^2.13.7",
     "pinia": "^3.0.4",
@@ -42,6 +44,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
+    "sass": "^1.99.0",
     "terser": "^5.46.2",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import viteCompression from 'vite-plugin-compression'
+import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,6 +12,19 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        '.ts': 'ts'
+      }
+    },
+    include: ['@cpzxrobot/sdk']
   },
   plugins: [
     vue(),
@@ -46,6 +60,9 @@ export default defineConfig({
             }
             if (id.includes('echarts')) {
               return 'echarts';
+            }
+            if (id.includes('@cpzxrobot')) {
+              return 'cpzxrobot';
             }
           }
         },

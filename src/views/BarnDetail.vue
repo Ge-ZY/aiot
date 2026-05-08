@@ -30,7 +30,7 @@
 
         <div class="panel chart-panel">
           <div class="panel-header">
-            <h3>温度趋势</h3>
+            <h3>环境趋势</h3>
           </div>
           <div ref="chartRef" class="chart-container"></div>
         </div>
@@ -215,8 +215,15 @@ const generateTempData = () => {
 
 const initChart = () => {
   if (!chartRef.value) return
+  
+  // 确保容器有尺寸
+  const container = chartRef.value
+  if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+    setTimeout(() => initChart(), 50)
+    return
+  }
 
-  chartInstance = echarts.init(chartRef.value)
+  chartInstance = echarts.init(container)
   const dates = generateDateData()
   const { avgTemp, heatTemp, coolTemp, targetTemp } = generateTempData()
 
@@ -343,6 +350,9 @@ const initChart = () => {
   }
 
   chartInstance.setOption(option)
+  
+  // 确保图表正确渲染
+  chartInstance.resize()
 }
 
 const handleResize = () => {
@@ -351,8 +361,10 @@ const handleResize = () => {
 
 onMounted(() => {
   nextTick(() => {
-    initSelectedBarn()
-    initChart()
+    setTimeout(() => {
+      initSelectedBarn()
+      initChart()
+    }, 100)
   })
   window.addEventListener('resize', handleResize)
 })
@@ -401,16 +413,16 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  flex: 1;
-  min-height: 300px;
+  flex: 0 0 auto;
+  min-height: 350px;
 }
 
 .bottom-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  flex: 1;
-  min-height: 300px;
+  flex: 0 0 auto;
+  min-height: 350px;
 }
 
 .panel {
@@ -421,7 +433,8 @@ onUnmounted(() => {
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panel-header {
@@ -458,6 +471,8 @@ onUnmounted(() => {
   flex: 1;
   width: 100%;
   min-height: 250px;
+  height: 100%;
+  min-width: 0;
 }
 
 .indicators-grid {

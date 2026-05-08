@@ -28,7 +28,7 @@
           <el-button-group>
             <el-button :icon="Refresh" @click="refreshCamera" />
             <el-button :icon="FullScreen" @click="toggleFullScreen" />
-            <el-button :icon="VideoCamera" @click="startRecord" type="primary">开始录像</el-button>
+            <!-- <el-button :icon="VideoCamera" @click="startRecord" type="primary">开始录像</el-button> -->
           </el-button-group>
         </div>
       </div>
@@ -157,9 +157,6 @@ const toggleFullScreen = () => {
   }
 }
 
-const startRecord = () => {
-  ElMessage.success('开始录像')
-}
 
 onMounted(() => {
   updateTime()
