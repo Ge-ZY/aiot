@@ -428,6 +428,9 @@ const handleResize = () => {
 
 onMounted(async () => {
   console.log('sdk', sdk)
+  const companyList = await sdk.company.list()
+  // const farmInfo =await sdk.factory.workshops(17629813863749)
+  console.log('companyList', companyList)
   nextTick(() => {
     setTimeout(() => initMapChart(), 50)
     setTimeout(() => initAlarmChart(), 150)
