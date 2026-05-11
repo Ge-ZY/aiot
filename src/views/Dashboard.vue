@@ -33,8 +33,31 @@
               </div>
             </div>
           </div>
-          <div class="map-container">
+          <div class="map-container" @contextmenu="handleContextMenu">
             <div ref="mapChartRef" class="map-chart"></div>
+            <!-- 子菜单弹出层 -->
+            <div v-if="showSubMenu" class="sub-menu-overlay">
+              <div class="sub-menu-content">
+                <div class="sub-menu-header">
+                  <span class="sub-menu-title">{{ subMenuTitle }}</span>
+                  <el-icon class="close-icon" @click="closeSubMenu">
+                    <Close />
+                  </el-icon>
+                </div>
+                <div class="sub-menu-list">
+                  <div v-for="(farm, index) in subMenuFarms" :key="index" class="sub-menu-item"
+                    @click="goToFarmDetail(farm)">
+                    <div class="farm-name">{{ farm.name }}</div>
+                    <div class="farm-info">
+                      <span class="info-tag">{{ farm.type }}</span>
+                      <span class="info-status" :class="farm.status === '正常' ? 'status-normal' : 'status-warning'">
+                        {{ farm.status }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -142,10 +165,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, FullScreen, VideoCamera, Warning, Plus, Delete, Edit, Refresh, Download, Lightning, Connection, Operation, Share, CircleCheck, CircleClose, Sunny, Refrigerator, Cpu, Bell } from '@element-plus/icons-vue'
+import { ArrowLeft, FullScreen, VideoCamera, Warning, Plus, Delete, Edit, Refresh, Download, Lightning, Connection, Operation, Share, CircleCheck, CircleClose, Sunny, Refrigerator, Cpu, Bell, Close } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
-import createChinaMapOption from '@/utils/chinaMapConfig'
+import { createChinaMapOption, createProvinceMapOption } from '@/utils/chinaMapConfig'
 import { sdk } from '@/utils/sdk'
 
 const router = useRouter()
@@ -155,6 +178,72 @@ const mapChartRef = ref<HTMLElement | null>(null)
 let alarmChart: echarts.ECharts | null = null
 let mapChart: echarts.ECharts | null = null
 
+// 地图当前层级：'china' 或省份名称
+const currentMapLevel = ref<'china' | string>('china')
+
+// 子菜单相关状态
+const showSubMenu = ref(false)
+const subMenuTitle = ref('')
+const subMenuFarms = ref<any[]>([])
+
+// 模拟的厂数据（尽量对应后台管理页面存在的厂）
+const mockFarms = {
+  pig: [
+    { id: 1, name: '保育舍1', type: '猪场', status: '正常', company: '正芯农牧' },
+    { id: 2, name: '保育舍2', type: '猪场', status: '正常', company: '正芯农牧' },
+    { id: 3, name: '保育舍3', type: '猪场', status: '正常', company: '正芯农牧' },
+    { id: 4, name: '保育舍4', type: '猪场', status: '告警', company: '正芯农牧' },
+    { id: 5, name: '分娩舍1', type: '猪场', status: '正常', company: '正芯农牧' },
+  ],
+  chicken: [
+    { id: 6, name: '蛋鸡舍A区', type: '鸡场', status: '正常', company: '正芯农牧' },
+    { id: 7, name: '蛋鸡舍B区', type: '鸡场', status: '正常', company: '正芯农牧' },
+    { id: 8, name: '肉鸡舍1', type: '鸡场', status: '告警', company: '正芯农牧' },
+    { id: 9, name: '肉鸡舍2', type: '鸡场', status: '正常', company: '正芯农牧' },
+  ],
+  aquatic: [
+    { id: 10, name: '鱼塘1区', type: '水产', status: '正常', company: '正芯农牧' },
+    { id: 11, name: '鱼塘2区', type: '水产', status: '正常', company: '正芯农牧' },
+    { id: 12, name: '虾塘1区', type: '水产', status: '告警', company: '正芯农牧' },
+  ]
+}
+
+const farmTypeNames = {
+  pig: '猪场',
+  chicken: '鸡场',
+  aquatic: '水产'
+}
+
+// 处理厂点击事件
+const handleFarmClick = (farmType: string, cityName: string) => {
+  const farms = mockFarms[farmType as keyof typeof mockFarms] || []
+  subMenuTitle.value = `${cityName} - ${farmTypeNames[farmType as keyof typeof farmTypeNames]}`
+  subMenuFarms.value = farms.map(farm => ({
+    ...farm,
+    name: `${cityName}${farm.name}`  // 添加城市前缀
+  }))
+  showSubMenu.value = true
+  
+  // 隐藏 tooltip
+  if (mapChart) {
+    mapChart.dispatchAction({
+      type: 'hideTip'
+    })
+  }
+}
+
+// 关闭子菜单
+const closeSubMenu = () => {
+  showSubMenu.value = false
+}
+
+// 跳转到厂详情
+const goToFarmDetail = (farm: any) => {
+  closeSubMenu()
+  // 跳转到首页，并选中对应的工厂
+  router.push({ path: '/', query: { farmId: farm.id, farmName: farm.name } })
+}
+
 const initMapChart = () => {
   if (!mapChartRef.value) return
 
@@ -162,10 +251,52 @@ const initMapChart = () => {
   const option = createChinaMapOption()
   mapChart.setOption(option)
 
+  // 地图点击事件 - 下钻到省级
+  mapChart.on('click', (params: any) => {
+    if (currentMapLevel.value === 'china') {
+      const provinceName = params.name
+      if (provinceName) {
+        showProvinceMap(provinceName)
+      }
+    }
+  })
+
   // 多次resize确保正确渲染
   setTimeout(() => mapChart?.resize(), 0)
   setTimeout(() => mapChart?.resize(), 100)
   setTimeout(() => mapChart?.resize(), 300)
+}
+
+// 显示省级地图
+const showProvinceMap = (provinceName: string) => {
+  if (!mapChart) return
+  currentMapLevel.value = provinceName
+  const option = createProvinceMapOption(provinceName)
+  mapChart.setOption(option, true)
+  setTimeout(() => mapChart?.resize(), 0)
+}
+
+// 返回全国地图
+const backToChinaMap = () => {
+  if (!mapChart) return
+  currentMapLevel.value = 'china'
+  const option = createChinaMapOption()
+  mapChart.setOption(option, true)
+  setTimeout(() => mapChart?.resize(), 0)
+}
+
+// 处理右键事件
+const handleContextMenu = (e: MouseEvent) => {
+  e.preventDefault() // 始终禁用右键菜单
+  
+  if (showSubMenu.value) {
+    // 如果有子菜单，先关闭子菜单
+    closeSubMenu()
+  } else if (currentMapLevel.value !== 'china') {
+    // 如果是市级地图，返回到全国地图
+    backToChinaMap()
+  }
+  // 全国地图不做任何事（已禁用右键）
 }
 
 const iconComponents: any = {
@@ -431,6 +562,10 @@ onMounted(async () => {
   const companyList = await sdk.company.list()
   // const farmInfo =await sdk.factory.workshops(17629813863749)
   console.log('companyList', companyList)
+
+    // 挂载全局事件处理函数
+    ; (window as any).handleFarmClick = handleFarmClick
+
   nextTick(() => {
     setTimeout(() => initMapChart(), 50)
     setTimeout(() => initAlarmChart(), 150)
@@ -445,6 +580,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  // 移除全局事件处理函数
+  delete (window as any).handleFarmClick
   alarmChart?.dispose()
   mapChart?.dispose()
 })
@@ -864,5 +1001,135 @@ onUnmounted(() => {
 
 .panel-content::-webkit-scrollbar-thumb:hover {
   background: rgba(64, 158, 255, 0.4);
+}
+
+/* 子菜单样式 */
+.sub-menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.sub-menu-content {
+  background: rgba(30, 41, 59, 0.98);
+  border-radius: 12px;
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  width: 400px;
+  max-height: 80%;  /* 最多占 .map-container 高度的80% */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.sub-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 16px;  /* 上边距加大 */
+  border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+  flex-shrink: 0;  /* 不压缩 */
+}
+
+.sub-menu-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #409eff;
+}
+
+.close-icon {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-icon:hover {
+  color: #fff;
+}
+
+.sub-menu-list {
+  padding: 16px 12px 20px;  /* 下边距加大 */
+  flex: 1;  /* 占满剩余空间 */
+  overflow-y: auto;  /* 允许垂直滚动 */
+  min-height: 0;  /* 避免flex子元素溢出 */
+}
+
+.sub-menu-item {
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  background: rgba(64, 158, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.sub-menu-item:hover {
+  background: rgba(64, 158, 255, 0.2);
+  border-color: rgba(64, 158, 255, 0.4);
+  transform: translateX(4px);
+}
+
+.farm-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.farm-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.info-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: rgba(103, 194, 58, 0.2);
+  color: #67c23a;
+  border-radius: 4px;
+}
+
+.info-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.info-status.status-normal {
+  background: rgba(103, 194, 58, 0.2);
+  color: #67c23a;
+}
+
+.info-status.status-warning {
+  background: rgba(230, 162, 60, 0.2);
+  color: #e6a23c;
+}
+
+/* 子菜单滚动条样式 */
+.sub-menu-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sub-menu-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.sub-menu-list::-webkit-scrollbar-thumb {
+  background: rgba(64, 158, 255, 0.3);
+  border-radius: 3px;
+}
+
+.sub-menu-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(64, 158, 255, 0.5);
 }
 </style>
