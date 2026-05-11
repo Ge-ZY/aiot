@@ -1,11 +1,11 @@
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
-import chinaRealGeoJSON from './chinaRealGeoJSON'
+import chinaGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-1.json'
 
 // 生成地图数据
 const generateMapData = () => {
-  return chinaRealGeoJSON.features.map(item => ({
-    name: item.properties.name,
+  return chinaGeoJSON.features.map(item => ({
+    name: item.properties?.name || '',
     value: Math.floor(Math.random() * 1000) + 100
   }))
 }
@@ -13,7 +13,7 @@ const generateMapData = () => {
 // 创建中国地图配置
 const createChinaMapOption = (): EChartsOption => {
   // 注册地图
-  echarts.registerMap('china', chinaRealGeoJSON as any)
+  echarts.registerMap('china', chinaGeoJSON as any)
 
   return {
     tooltip: {
@@ -23,7 +23,7 @@ const createChinaMapOption = (): EChartsOption => {
       borderWidth: 1,
       padding: [12, 16],
       textStyle: {
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 14
       },
       formatter: (params: any) => {
@@ -40,19 +40,23 @@ const createChinaMapOption = (): EChartsOption => {
     },
     geo: {
       map: 'china',
-      roam: false,
+      roam: true,
       zoom: 1.2,
+      scaleLimit: {
+        min: 0.5,
+        max: 5
+      },
       layoutCenter: ['50%', '50%'],
       layoutSize: '85%',
       label: {
         show: true,
-        color: '#ffffff',
+        color: '#fff',
         fontSize: 10
       },
       emphasis: {
         label: {
           show: true,
-          color: '#ffffff',
+          color: '#fff',
           fontSize: 12,
           fontWeight: 'bold'
         },
@@ -90,11 +94,16 @@ const createChinaMapOption = (): EChartsOption => {
         type: 'map',
         map: 'china',
         geoIndex: 0,
+        roam: true,
+        scaleLimit: {
+          min: 0.5,
+          max: 5
+        },
         data: generateMapData(),
         emphasis: {
           label: {
             show: true,
-            color: '#ffffff',
+            color: '#fff',
             fontSize: 12,
             fontWeight: 'bold'
           },
