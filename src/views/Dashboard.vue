@@ -1,5 +1,21 @@
 <template>
   <div class="dashboard" :class="{ fullscreen: isFullscreen }">
+    <!-- 农场指标 tooltip - 放在最外层，fixed 定位 -->
+    <div v-if="showFarmIndicatorTooltip" class="farm-tooltip" :style="{ left: farmTooltipPosition.x + 'px', top: farmTooltipPosition.y + 'px' }">
+      <div class="farm-tooltip-item">
+        <span class="farm-tooltip-label">农场总数:</span>
+        <span class="farm-tooltip-value">2725</span>
+      </div>
+      <div class="farm-tooltip-item">
+        <span class="farm-tooltip-label">栏舍总数:</span>
+        <span class="farm-tooltip-value">12400</span>
+      </div>
+      <div class="farm-tooltip-item">
+        <span class="farm-tooltip-label">存栏总量:</span>
+        <span class="farm-tooltip-value">400万</span>
+      </div>
+    </div>
+    
     <div class="dashboard-header">
       <div class="header-left">
         <el-button type="primary" :icon="ArrowLeft" @click="goBack">返回</el-button>
@@ -19,17 +35,29 @@
           <div class="panel-header farm-panel-header">
             <h3 class="farm-title" @click="goBack">农场看板</h3>
             <div class="farm-indicators-header">
-              <div class="indicator-item">
-                <span class="indicator-label">农场总数:</span>
-                <span class="indicator-value">{{ 2725 }}</span>
+              <div 
+                class="farm-type-item" 
+                @mouseenter="(e) => showFarmTooltip(0, e)" 
+                @mouseleave="hideFarmTooltip"
+              >
+                <el-icon class="farm-icon"><Box /></el-icon>
+                <span class="farm-type-label">猪场</span>
               </div>
-              <div class="indicator-item">
-                <span class="indicator-label">栏舍总数:</span>
-                <span class="indicator-value">{{ 12400 }}</span>
+              <div 
+                class="farm-type-item" 
+                @mouseenter="(e) => showFarmTooltip(1, e)" 
+                @mouseleave="hideFarmTooltip"
+              >
+                <el-icon class="farm-icon"><Food /></el-icon>
+                <span class="farm-type-label">鸡场</span>
               </div>
-              <div class="indicator-item">
-                <span class="indicator-label">存栏总量:</span>
-                <span class="indicator-value">400万</span>
+              <div 
+                class="farm-type-item" 
+                @mouseenter="(e) => showFarmTooltip(2, e)" 
+                @mouseleave="hideFarmTooltip"
+              >
+                <el-icon class="farm-icon"><Crop /></el-icon>
+                <span class="farm-type-label">水产</span>
               </div>
             </div>
           </div>
@@ -165,11 +193,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, FullScreen, VideoCamera, Warning, Plus, Delete, Edit, Refresh, Download, Lightning, Connection, Operation, Share, CircleCheck, CircleClose, Sunny, Refrigerator, Cpu, Bell, Close } from '@element-plus/icons-vue'
+import { ArrowLeft, FullScreen, VideoCamera, Warning, Plus, Delete, Edit, Refresh, Download, Lightning, Connection, Operation, Share, CircleCheck, CircleClose, Sunny, Refrigerator, Cpu, Bell, Close, Box, Food, Crop } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import { createChinaMapOption, createProvinceMapOption } from '@/utils/chinaMapConfig'
-import { sdk } from '@/utils/sdk'
 
 const router = useRouter()
 const isFullscreen = ref(false)
@@ -177,6 +204,10 @@ const alarmChartRef = ref<HTMLElement | null>(null)
 const mapChartRef = ref<HTMLElement | null>(null)
 let alarmChart: echarts.ECharts | null = null
 let mapChart: echarts.ECharts | null = null
+
+// 农场指标 tooltip
+const showFarmIndicatorTooltip = ref(false)
+const farmTooltipPosition = ref({ x: 0, y: 0 })
 
 // 地图当前层级：'china' 或省份名称
 const currentMapLevel = ref<'china' | string>('china')
@@ -212,6 +243,21 @@ const farmTypeNames = {
   pig: '猪场',
   chicken: '鸡场',
   aquatic: '水产'
+}
+
+const showFarmTooltip = (_index: number, event?: MouseEvent) => {
+  if (event) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    farmTooltipPosition.value = {
+      x: rect.left + rect.width / 2 - 80,
+      y: rect.bottom + 10
+    }
+  }
+  showFarmIndicatorTooltip.value = true
+}
+
+const hideFarmTooltip = () => {
+  showFarmIndicatorTooltip.value = false
 }
 
 // 处理厂点击事件
@@ -261,10 +307,8 @@ const initMapChart = () => {
     }
   })
 
-  // 多次resize确保正确渲染
-  setTimeout(() => mapChart?.resize(), 0)
-  setTimeout(() => mapChart?.resize(), 100)
-  setTimeout(() => mapChart?.resize(), 300)
+  // 只需要一次 resize
+  setTimeout(() => mapChart?.resize(), 50)
 }
 
 // 显示省级地图
@@ -365,169 +409,134 @@ const initAlarmChart = () => {
   // 确保容器有尺寸
   const container = alarmChartRef.value
 
-  // 检查容器尺寸 - 更可靠的检查方式
-  const checkContainer = () => {
-    const rect = container.getBoundingClientRect()
-    return rect.width > 0 && rect.height > 0 &&
-      container.offsetWidth > 0 &&
-      container.offsetHeight > 0
+  // 如果图表已存在，先销毁
+  if (alarmChart) {
+    alarmChart.dispose()
   }
 
-  if (!checkContainer()) {
-    // 如果容器没有尺寸，多次尝试
-    let retryCount = 0
-    const retryInit = () => {
-      if (retryCount >= 20) {
-        console.error('图表容器无法获取尺寸')
-        return
+  alarmChart = echarts.init(container, undefined, {
+    renderer: 'canvas',
+    useDirtyRect: false
+  })
+
+  const { dates, values } = generateLast30Days()
+  chartDates.value = dates
+
+  const option: EChartsOption = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(30, 41, 59, 0.9)',
+      borderColor: '#409eff',
+      textStyle: {
+        color: '#fff'
+      },
+      enterable: true
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '5%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: dates,
+      axisLine: {
+        lineStyle: {
+          color: 'rgba(255, 255, 255, 0.3)'
+        }
+      },
+      axisLabel: {
+        color: 'rgba(255, 255, 255, 0.7)',
+        fontSize: 10,
+        interval: 4
+      },
+      axisTick: {
+        show: false
       }
-      retryCount++
-      setTimeout(() => {
-        if (checkContainer()) {
-          doInitChart()
-        } else {
-          retryInit()
-        }
-      }, 100)
-    }
-    retryInit()
-    return
-  }
-
-  doInitChart()
-
-  function doInitChart() {
-    // 如果图表已存在，先销毁
-    if (alarmChart) {
-      alarmChart.dispose()
-    }
-
-    alarmChart = echarts.init(container, undefined, {
-      renderer: 'canvas',
-      useDirtyRect: false
-    })
-
-    const { dates, values } = generateLast30Days()
-    chartDates.value = dates
-
-    const option: EChartsOption = {
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: 'rgba(30, 41, 59, 0.9)',
-        borderColor: '#409eff',
-        textStyle: {
-          color: '#fff'
-        },
-        enterable: true
+    },
+    yAxis: {
+      type: 'value',
+      name: '报警数量',
+      nameTextStyle: {
+        color: 'rgba(255, 255, 255, 0.7)'
       },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '5%',
-        top: '10%',
-        containLabel: true
-      },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: dates,
-        axisLine: {
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.3)'
-          }
-        },
-        axisLabel: {
-          color: 'rgba(255, 255, 255, 0.7)',
-          fontSize: 10,
-          interval: 4
-        },
-        axisTick: {
-          show: false
+      axisLine: {
+        lineStyle: {
+          color: 'rgba(255, 255, 255, 0.3)'
         }
       },
-      yAxis: {
-        type: 'value',
+      axisLabel: {
+        color: 'rgba(255, 255, 255, 0.7)'
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      }
+    },
+    series: [
+      {
         name: '报警数量',
-        nameTextStyle: {
-          color: 'rgba(255, 255, 255, 0.7)'
+        type: 'line',
+        smooth: true,
+        data: values,
+        symbolSize: 5,
+        symbol: 'circle',
+        showSymbol: false,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(64, 158, 255, 0.5)' },
+            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+          ])
         },
-        axisLine: {
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.3)'
-          }
+        lineStyle: {
+          color: '#409eff',
+          width: 2
         },
-        axisLabel: {
-          color: 'rgba(255, 255, 255, 0.7)'
+        itemStyle: {
+          color: '#409eff',
+          borderColor: '#fff',
+          borderWidth: 1
         },
-        splitLine: {
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.1)'
-          }
-        }
-      },
-      series: [
-        {
-          name: '报警数量',
-          type: 'line',
-          smooth: true,
-          data: values,
-          symbolSize: 5,
-          symbol: 'circle',
-          showSymbol: false,
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(64, 158, 255, 0.5)' },
-              { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
-            ])
-          },
-          lineStyle: {
-            color: '#409eff',
-            width: 2
-          },
-          itemStyle: {
-            color: '#409eff',
-            borderColor: '#fff',
-            borderWidth: 1
-          },
-        }
-      ]
-    }
+      }
+    ]
+  }
 
-    alarmChart.setOption(option)
+  alarmChart.setOption(option)
 
-    // 确保图表正确渲染 - 多次 resize 确保生产环境也能显示
-    setTimeout(() => alarmChart?.resize(), 0)
-    setTimeout(() => alarmChart?.resize(), 100)
-    setTimeout(() => alarmChart?.resize(), 300)
+  // 只需要一次 resize
+  setTimeout(() => alarmChart?.resize(), 50)
 
-    // 图表点击事件
-    alarmChart.getZr().on('click', (params: any) => {
-      const pointInPixel = [params.offsetX, params.offsetY]
-      if (alarmChart) {
-        const pointInGrid = alarmChart.convertFromPixel('grid', pointInPixel)
-        if (pointInGrid) {
-          const dataIndex = Math.round(pointInGrid[0])
-          if (dataIndex >= 0 && dataIndex < dates.length) {
-            const year = new Date().getFullYear()
-            const dateStr = `${year}-${dates[dataIndex]}`
-            router.push({
-              path: '/alarm-detail',
-              query: { date: dateStr }
-            })
-          }
+  // 图表点击事件
+  alarmChart.getZr().on('click', (params: any) => {
+    const pointInPixel = [params.offsetX, params.offsetY]
+    if (alarmChart) {
+      const pointInGrid = alarmChart.convertFromPixel('grid', pointInPixel)
+      if (pointInGrid) {
+        const dataIndex = Math.round(pointInGrid[0])
+        if (dataIndex >= 0 && dataIndex < dates.length) {
+          const year = new Date().getFullYear()
+          const dateStr = `${year}-${dates[dataIndex]}`
+          router.push({
+            path: '/alarm-detail',
+            query: { date: dateStr }
+          })
         }
       }
-    })
+    }
+  })
 
-    alarmChart.on('click', (params: any) => {
-      const year = new Date().getFullYear()
-      const dateStr = `${year}-${params.name}`
-      router.push({
-        path: '/alarm-detail',
-        query: { date: dateStr }
-      })
+  alarmChart.on('click', (params: any) => {
+    const year = new Date().getFullYear()
+    const dateStr = `${year}-${params.name}`
+    router.push({
+      path: '/alarm-detail',
+      query: { date: dateStr }
     })
-  }
+  })
 }
 
 const goBack = () => {
@@ -558,21 +567,14 @@ const handleResize = () => {
 }
 
 onMounted(async () => {
-  console.log('sdk', sdk)
-  const companyList = await sdk.company.list()
-  // const farmInfo =await sdk.factory.workshops(17629813863749)
-  console.log('companyList', companyList)
+  // 挂载全局事件处理函数
+  ; (window as any).handleFarmClick = handleFarmClick
 
-    // 挂载全局事件处理函数
-    ; (window as any).handleFarmClick = handleFarmClick
-
+  // 优先初始化地图（用户第一眼看到的）
   nextTick(() => {
-    setTimeout(() => initMapChart(), 50)
-    setTimeout(() => initAlarmChart(), 150)
-    setTimeout(() => {
-      mapChart?.resize()
-      alarmChart?.resize()
-    }, 600)
+    initMapChart()
+    // 延迟初始化报警图表，避免阻塞主线程
+    setTimeout(() => initAlarmChart(), 300)
   })
 
   window.addEventListener('resize', handleResize)
@@ -748,22 +750,63 @@ onUnmounted(() => {
 .farm-indicators-header {
   display: flex;
   gap: 30px;
+  position: relative;
 }
 
-.indicator-item {
+.farm-type-item {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.indicator-label {
-  font-size: 13px;
+.farm-type-item:hover {
+  background: rgba(64, 158, 255, 0.2);
+}
+
+.farm-icon {
+  font-size: 20px;
+  color: #409eff;
+}
+
+.farm-type-label {
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
 }
 
-.indicator-value {
-  font-size: 18px;
+.farm-tooltip {
+  position: fixed;
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(64, 158, 255, 0.5);
+  border-radius: 8px;
+  padding: 12px 16px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.farm-tooltip-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+
+.farm-tooltip-item:last-child {
+  margin-bottom: 0;
+}
+
+.farm-tooltip-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.farm-tooltip-value {
+  font-size: 16px;
   font-weight: bold;
   color: #67c23a;
   text-shadow: 0 0 10px rgba(103, 194, 58, 0.6);

@@ -1,6 +1,11 @@
 import * as echarts from 'echarts'
+
+// 直接导入地图数据，但保持 getter 方式以便后续优化
 import chinaGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-1.json'
 import chinaCitiesGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-2.json'
+
+const getChinaGeoJSON = () => chinaGeoJSON
+const getChinaCitiesGeoJSON = () => chinaCitiesGeoJSON
 
 // 省份名称映射表（用于匹配 chn-level-1 和 chn-level-2 的名称）
 const provinceNameMap: Record<string, string> = {
@@ -61,6 +66,7 @@ const generateMapData = (geoJSON: any) => {
 
 // 根据省份名称筛选市级数据
 const getProvinceCitiesGeoJSON = (provinceName: string) => {
+  const chinaCitiesGeoJSON = getChinaCitiesGeoJSON()
   const targetProvinceName = provinceNameMap[provinceName] || provinceName
   
   const features = chinaCitiesGeoJSON.features.filter((feature: any) => {
@@ -90,7 +96,14 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
         fontSize: 14
       },
       enterable: true,  // 允许鼠标进入tooltip
-      hideDelay: 1000,  // 延迟1000ms隐藏
+      hideDelay: 500,  // 延迟500ms隐藏
+      position: (point: [number, number], _params: any, _dom: any, _rect: any, _size: any) => {
+        // tooltip 位置调整，离鼠标更近
+        return {
+          left: point[0] + 10,
+          top: point[1] - 10
+        };
+      },
       formatter: (params: any) => {
         const pigFarm = Math.floor(Math.random() * 11) + 10;  // 10-20
         const chickenFarm = Math.floor(Math.random() * 11) + 10;  // 10-20
@@ -225,7 +238,7 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
 
 // 创建中国地图配置
 const createChinaMapOption = (): any => {
-  return createMapOption('china', chinaGeoJSON)
+  return createMapOption('china', getChinaGeoJSON())
 }
 
 // 创建省级地图配置
@@ -234,4 +247,4 @@ const createProvinceMapOption = (provinceName: string): any => {
   return createMapOption(provinceName, provinceGeoJSON)
 }
 
-export { createChinaMapOption, createProvinceMapOption, chinaGeoJSON }
+export { createChinaMapOption, createProvinceMapOption }
