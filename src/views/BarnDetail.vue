@@ -83,29 +83,123 @@
           </div>
           <div class="devices-grid">
             <div class="device-item">
-              <div class="device-name">24变频风机</div>
-              <el-switch v-model="devices.fan24" active-color="#67c23a" />
-              <div class="device-status" :class="{ on: devices.fan24 }">{{ devices.fan24 ? '运行中' : '已关闭' }}</div>
+              <div class="device-header">
+                <div class="device-name">24变频风机</div>
+                <div class="device-controls">
+                  <el-switch v-model="devices.fan24.on" active-color="#67c23a" />
+                  <div class="device-status" :class="{ on: devices.fan24.on }">{{ devices.fan24.on ? '运行中' : '已关闭' }}</div>
+                </div>
+              </div>
+              <div class="device-details" v-if="devices.fan24.on">
+                <div class="detail-item">
+                  <span class="detail-label">运行时长</span>
+                  <span class="detail-value">{{ devices.fan24.runtime }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">通风模式</span>
+                  <el-select v-model="devices.fan24.mode" size="small" style="width: 90px;">
+                    <el-option label="最小" value="min" />
+                    <el-option label="常规" value="normal" />
+                    <el-option label="最大" value="max" />
+                    <el-option label="紧急" value="emergency" />
+                  </el-select>
+                </div>
+              </div>
             </div>
             <div class="device-item">
-              <div class="device-name">吊顶小窗</div>
-              <el-switch v-model="devices.ceilingWindow" active-color="#67c23a" />
-              <div class="device-status" :class="{ on: devices.ceilingWindow }">{{ devices.ceilingWindow ? '已打开' : '已关闭' }}</div>
+              <div class="device-header">
+                <div class="device-name">吊顶小窗</div>
+                <div class="device-controls">
+                  <el-switch v-model="devices.ceilingWindow.on" active-color="#67c23a" />
+                  <div class="device-status" :class="{ on: devices.ceilingWindow.on }">{{ devices.ceilingWindow.on ? '已打开' : '已关闭' }}</div>
+                </div>
+              </div>
+              <div class="device-details" v-if="devices.ceilingWindow.on">
+                <div class="detail-item">
+                  <span class="detail-label">开度</span>
+                  <el-select v-model="devices.ceilingWindow.opening" size="small" style="width: 90px;">
+                    <el-option label="全开" value="full" />
+                    <el-option label="全关" value="close" />
+                    <el-option label="半开" value="half" />
+                    <el-option label="正在动作" value="moving" />
+                  </el-select>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">模式</span>
+                  <el-select v-model="devices.ceilingWindow.mode" size="small" style="width: 90px;">
+                    <el-option label="手动" value="manual" />
+                    <el-option label="自动" value="auto" />
+                    <el-option label="定时" value="timer" />
+                  </el-select>
+                </div>
+              </div>
             </div>
             <div class="device-item">
-              <div class="device-name">36风机</div>
-              <el-switch v-model="devices.fan36" active-color="#67c23a" />
-              <div class="device-status" :class="{ on: devices.fan36 }">{{ devices.fan36 ? '运行中' : '已关闭' }}</div>
+              <div class="device-header">
+                <div class="device-name">36风机</div>
+                <div class="device-controls">
+                  <el-switch v-model="devices.fan36.on" active-color="#67c23a" />
+                  <div class="device-status" :class="{ on: devices.fan36.on }">{{ devices.fan36.on ? '运行中' : '已关闭' }}</div>
+                </div>
+              </div>
+              <div class="device-details" v-if="devices.fan36.on">
+                <div class="detail-item">
+                  <span class="detail-label">运行时长</span>
+                  <span class="detail-value">{{ devices.fan36.runtime }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">通风模式</span>
+                  <el-select v-model="devices.fan36.mode" size="small" style="width: 90px;">
+                    <el-option label="最小" value="min" />
+                    <el-option label="常规" value="normal" />
+                    <el-option label="最大" value="max" />
+                    <el-option label="紧急" value="emergency" />
+                  </el-select>
+                </div>
+              </div>
             </div>
             <div class="device-item">
-              <div class="device-name">50风机</div>
-              <el-switch v-model="devices.fan50" active-color="#67c23a" />
-              <div class="device-status" :class="{ on: devices.fan50 }">{{ devices.fan50 ? '运行中' : '已关闭' }}</div>
+              <div class="device-header">
+                <div class="device-name">50风机</div>
+                <div class="device-controls">
+                  <el-switch v-model="devices.fan50.on" active-color="#67c23a" />
+                  <div class="device-status" :class="{ on: devices.fan50.on }">{{ devices.fan50.on ? '运行中' : '已关闭' }}</div>
+                </div>
+              </div>
+              <div class="device-details" v-if="devices.fan50.on">
+                <div class="detail-item">
+                  <span class="detail-label">运行时长</span>
+                  <span class="detail-value">{{ devices.fan50.runtime }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">通风模式</span>
+                  <el-select v-model="devices.fan50.mode" size="small" style="width: 90px;">
+                    <el-option label="最小" value="min" />
+                    <el-option label="常规" value="normal" />
+                    <el-option label="最大" value="max" />
+                    <el-option label="紧急" value="emergency" />
+                  </el-select>
+                </div>
+              </div>
             </div>
             <div class="device-item">
-              <div class="device-name">水帘</div>
-              <el-switch v-model="devices.waterCurtain" active-color="#67c23a" />
-              <div class="device-status" :class="{ on: devices.waterCurtain }">{{ devices.waterCurtain ? '运行中' : '已关闭' }}</div>
+              <div class="device-header">
+                <div class="device-name">水帘</div>
+                <div class="device-controls">
+                  <el-switch v-model="devices.waterCurtain.on" active-color="#67c23a" />
+                  <div class="device-status" :class="{ on: devices.waterCurtain.on }">{{ devices.waterCurtain.on ? '运行中' : '已关闭' }}</div>
+                </div>
+              </div>
+              <div class="device-details" v-if="devices.waterCurtain.on">
+                <div class="detail-item">
+                  <span class="detail-label">运行时长</span>
+                  <span class="detail-value">{{ devices.waterCurtain.runtime }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">水池水位</span>
+                  <span class="detail-value">{{ devices.waterCurtain.waterLevel }}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -139,12 +233,38 @@ const barnName = computed(() => {
 })
 
 const devices = ref({
-  fan24: true,
-  ceilingWindow: true,
-  fan36: false,
-  fan50: true,
-  waterCurtain: false
+  fan24: {
+    on: true,
+    runtime: '2小时30分',
+    mode: 'normal'
+  },
+  ceilingWindow: {
+    on: true,
+    opening: 'half',
+    mode: 'auto'
+  },
+  fan36: {
+    on: false,
+    runtime: '0小时0分',
+    mode: 'normal'
+  },
+  fan50: {
+    on: true,
+    runtime: '1小时15分',
+    mode: 'max'
+  },
+  waterCurtain: {
+    on: false,
+    runtime: '0小时0分',
+    waterLevel: 75
+  }
 })
+
+const generateRuntime = () => {
+  const hours = Math.floor(Math.random() * 8)
+  const minutes = Math.floor(Math.random() * 60)
+  return `${hours}小时${minutes}分`
+}
 
 const handleBarnChange = () => {
   // 切换栏舍时重新生成数据
@@ -160,12 +280,36 @@ const handleBarnChange = () => {
     chartInstance.setOption(option)
   }
   // 随机更新设备状态
+  const modes = ['min', 'normal', 'max', 'emergency']
+  const openings = ['full', 'close', 'half', 'moving']
+  const windowModes = ['manual', 'auto', 'timer']
+  
   devices.value = {
-    fan24: Math.random() > 0.5,
-    ceilingWindow: Math.random() > 0.5,
-    fan36: Math.random() > 0.5,
-    fan50: Math.random() > 0.5,
-    waterCurtain: Math.random() > 0.5
+    fan24: {
+      on: Math.random() > 0.5,
+      runtime: generateRuntime(),
+      mode: modes[Math.floor(Math.random() * modes.length)]
+    },
+    ceilingWindow: {
+      on: Math.random() > 0.5,
+      opening: openings[Math.floor(Math.random() * openings.length)],
+      mode: windowModes[Math.floor(Math.random() * windowModes.length)]
+    },
+    fan36: {
+      on: Math.random() > 0.5,
+      runtime: generateRuntime(),
+      mode: modes[Math.floor(Math.random() * modes.length)]
+    },
+    fan50: {
+      on: Math.random() > 0.5,
+      runtime: generateRuntime(),
+      mode: modes[Math.floor(Math.random() * modes.length)]
+    },
+    waterCurtain: {
+      on: Math.random() > 0.5,
+      runtime: generateRuntime(),
+      waterLevel: Math.floor(Math.random() * 30) + 50
+    }
   }
 }
 
@@ -390,12 +534,12 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .page-header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   background: linear-gradient(90deg, #409eff, #67c23a);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -405,31 +549,31 @@ onUnmounted(() => {
 .detail-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  min-height: calc(100vh - 100px);
+  gap: 15px;
+  min-height: calc(100vh - 80px);
 }
 
 .top-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 15px;
   flex: 0 0 auto;
-  min-height: 350px;
+  min-height: 300px;
 }
 
 .bottom-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 15px;
   flex: 0 0 auto;
-  min-height: 350px;
+  min-height: 300px;
 }
 
 .panel {
   background: rgba(30, 41, 59, 0.8);
   border-radius: 12px;
   border: 1px solid rgba(64, 158, 255, 0.2);
-  padding: 20px;
+  padding: 15px;
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
@@ -438,14 +582,14 @@ onUnmounted(() => {
 }
 
 .panel-header {
-  margin-bottom: 15px;
-  padding-bottom: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(64, 158, 255, 0.3);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #409eff;
 }
@@ -478,13 +622,13 @@ onUnmounted(() => {
 .indicators-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 12px;
 }
 
 .indicator-item {
   background: rgba(64, 158, 255, 0.1);
   border: 1px solid rgba(64, 158, 255, 0.2);
-  padding: 15px;
+  padding: 12px;
   border-radius: 8px;
   text-align: center;
   transition: all 0.3s ease;
@@ -496,15 +640,15 @@ onUnmounted(() => {
 }
 
 .indicator-label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
 }
 
 .indicator-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
-  text-shadow: 0 0 15px currentColor;
+  text-shadow: 0 0 12px currentColor;
 }
 
 .devices-grid {
@@ -516,12 +660,11 @@ onUnmounted(() => {
 .device-item {
   background: rgba(103, 194, 58, 0.1);
   border: 1px solid rgba(103, 194, 58, 0.3);
-  padding: 15px;
+  padding: 10px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.3s ease;
 }
 
@@ -530,19 +673,60 @@ onUnmounted(() => {
   box-shadow: 0 0 20px rgba(103, 194, 58, 0.3);
 }
 
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .device-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: white;
 }
 
+.device-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .device-status {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
 }
 
 .device-status.on {
   color: #67c23a;
-  text-shadow: 0 0 10px #67c23a;
+  text-shadow: 0 0 8px #67c23a;
+}
+
+.device-details {
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid rgba(103, 194, 58, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.detail-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.detail-value {
+  font-size: 11px;
+  color: #67c23a;
+  font-weight: 500;
 }
 </style>

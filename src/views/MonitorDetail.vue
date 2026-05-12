@@ -1,15 +1,28 @@
 <template>
   <div class="home-container">
     <div class="sidebar">
-      <div class="tree-title">工厂选择</div>
-      <el-tree
-        :data="companyTree"
-        :props="treeProps"
-        default-expand-all
-        node-key="id"
-        highlight-current
-        @node-click="handleNodeClick"
-      />
+      <el-card>
+        <template #header>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <h4>公司列表</h4>
+              <el-input v-model="filterText" placeholder="输入关键字过滤" size="small" style="width: 150px" clearable />
+            </div>
+            <el-select v-model="selectedFactoryType" placeholder="选择工厂类型" size="small" style="width: 100%;">
+              <el-option label="猪场" value="pig" />
+              <el-option label="鸡场" value="chicken" />
+              <el-option label="水产" value="aquatic" />
+            </el-select>
+          </div>
+        </template>
+        <el-tree :data="companies" node-key="id" :props="{
+          label: 'name',
+          value: 'id',
+          children: 'children'
+        }" @node-click="handleNodeClick" highlight-current
+          :expand-on-click-node="false" :filter-node-method="filterNode" ref="companyTree">
+        </el-tree>
+      </el-card>
     </div>
     <div class="main-content">
       <div class="camera-header">
@@ -54,58 +67,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { VideoCamera, Refresh, FullScreen } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { sdk } from '@/utils/sdk'
 
-const treeProps = {
-  children: 'children',
-  label: 'name'
+const companyTree = ref()
+const filterText = ref('')
+const selectedFactoryType = ref('pig')
+const currentNodeData = ref<any>(null)
+const lastLeafNode = ref<any>(null) // 记录最后一次选择的叶子节点
+
+const companies = ref<any[]>([])
+
+const filterNode = (value: string, data: any) => {
+  if (!value) return true
+  return data.name.includes(value) || data.code.includes(value)
 }
 
-const companyTree = ref([
-  {
-    id: 1,
-    name: '大牧集团',
-    children: [
-      {
-        id: 11,
-        name: '华南分公司',
-        children: [
-          {
-            id: 111,
-            name: '生产部',
-            children: [
-              { id: 1111, name: '广州一厂' },
-              { id: 1112, name: '深圳二厂' }
-            ]
-          },
-          {
-            id: 112,
-            name: '技术部',
-            children: [
-              { id: 1121, name: '东莞研发中心' }
-            ]
-          }
-        ]
-      },
-      {
-        id: 12,
-        name: '华东分公司',
-        children: [
-          {
-            id: 121,
-            name: '生产部',
-            children: [
-              { id: 1211, name: '上海一厂' },
-              { id: 1212, name: '杭州二厂' }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-])
+watch(filterText, (val) => {
+  companyTree.value?.filter(val)
+})
 
 const currentFactory = ref('')
 const selectedCamera = ref('CAM-001')
@@ -139,9 +121,57 @@ const updateTime = () => {
   })
 }
 
-const handleNodeClick = (data: any) => {
-  if (!data.children || data.children.length === 0) {
+const handleNodeClick = async (data: any) => {
+  currentNodeData.value = data
+  // 如果节点有子节点但未加载，则从API获取
+  if (data.children.length === 0) {
+    refreshNodeData()
+  }
+
+  // 判断是否为叶子节点（没有子节点）
+  const isLeafNode = !data.children || data.children.length === 0
+  
+  if (isLeafNode) {
+    // 如果是叶子节点，更新显示
+    lastLeafNode.value = data
     currentFactory.value = data.name
+    console.log('点击叶子节点，:', data)
+  } else {
+    // 如果不是叶子节点，保持显示最后一次选择的叶子节点
+    if (lastLeafNode.value) {
+      currentFactory.value = lastLeafNode.value.name
+    }
+  }
+}
+
+async function refreshNodeData() {
+  if (!currentNodeData.value) return
+  
+  try {
+    const res = await sdk.company.treenode(currentNodeData.value.id)
+    if (res.data && res.data.data) {
+      currentNodeData.value.children = res.data.data.map((child: any) => ({
+        ...child,
+        children: [] // 初始化空子节点
+      }))
+      companyTree.value?.updateKeyChildren(currentNodeData.value.id, currentNodeData.value.children)
+    }
+  } catch (err) {
+    console.error('Failed to refresh node data:', err)
+  }
+}
+
+async function loadCompanys() {
+  try {
+    const res = await sdk.company.treenode()
+    if (res.data && res.data.data) {
+      companies.value = res.data.data.map((group: any) => ({
+        ...group,
+        children: [] // 初始化空子节点
+      }))
+    }
+  } catch (err) {
+    console.error('Failed to load groups:', err)
   }
 }
 
@@ -158,7 +188,8 @@ const toggleFullScreen = () => {
 }
 
 
-onMounted(() => {
+onMounted(async () => {
+  await loadCompanys()
   updateTime()
   timer = setInterval(updateTime, 1000)
 })
@@ -178,38 +209,26 @@ onUnmounted(() => {
 }
 
 .sidebar {
-  width: 240px;
-  background: #ffffff;
-  color: #303133;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  width: 300px;
+  flex-shrink: 0;
+  overflow: auto;
   border-right: 1px solid #e6e6e6;
-}
-
-.tree-title {
-  padding: 16px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #303133;
-  border-bottom: 1px solid #e6e6e6;
 }
 
 .sidebar :deep(.el-tree) {
   background: transparent;
-  color: #303133;
-  border: none;
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 0;
+}
+
+.sidebar :deep(.el-tree-node__content) {
+  height: 36px;
 }
 
 .sidebar :deep(.el-tree-node__content:hover) {
-  background: #f0f7ff;
+  background-color: #f0f7ff;
 }
 
-.sidebar :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background: #e6f7ff;
+.sidebar :deep(.el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content) {
+  background-color: #e6f7ff;
   color: #1890ff;
 }
 

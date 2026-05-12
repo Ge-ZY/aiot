@@ -1,11 +1,11 @@
 import * as echarts from 'echarts'
 
-// 直接导入地图数据，但保持 getter 方式以便后续优化
+// 直接导入地图数据，保证稳定性
 import chinaGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-1.json'
 import chinaCitiesGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-2.json'
 
-const getChinaGeoJSON = () => chinaGeoJSON
-const getChinaCitiesGeoJSON = () => chinaCitiesGeoJSON
+const getChinaGeoJSON = (): any => chinaGeoJSON
+const getChinaCitiesGeoJSON = (): any => chinaCitiesGeoJSON
 
 // 省份名称映射表（用于匹配 chn-level-1 和 chn-level-2 的名称）
 const provinceNameMap: Record<string, string> = {
@@ -65,17 +65,17 @@ const generateMapData = (geoJSON: any) => {
 }
 
 // 根据省份名称筛选市级数据
-const getProvinceCitiesGeoJSON = (provinceName: string) => {
-  const chinaCitiesGeoJSON = getChinaCitiesGeoJSON()
+const getProvinceCitiesGeoJSON = (provinceName: string): any => {
+  const citiesGeoJSON = getChinaCitiesGeoJSON()
   const targetProvinceName = provinceNameMap[provinceName] || provinceName
   
-  const features = chinaCitiesGeoJSON.features.filter((feature: any) => {
+  const features = citiesGeoJSON.features.filter((feature: any) => {
     const province = feature.properties?.province
     return province === targetProvinceName
   })
   
   return {
-    ...chinaCitiesGeoJSON,
+    ...citiesGeoJSON,
     features
   }
 }
@@ -238,7 +238,8 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
 
 // 创建中国地图配置
 const createChinaMapOption = (): any => {
-  return createMapOption('china', getChinaGeoJSON())
+  const geoJSON = getChinaGeoJSON()
+  return createMapOption('china', geoJSON)
 }
 
 // 创建省级地图配置

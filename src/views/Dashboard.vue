@@ -31,6 +31,7 @@
 
     <div class="dashboard-content">
       <div class="grid-container">
+        <!-- 农场看板 - 高度增加 -->
         <div class="panel farm-panel">
           <div class="panel-header farm-panel-header">
             <h3 class="farm-title" @click="goBack">农场看板</h3>
@@ -63,6 +64,11 @@
           </div>
           <div class="map-container" @contextmenu="handleContextMenu">
             <div ref="mapChartRef" class="map-chart"></div>
+            <!-- 加载状态 -->
+            <div v-if="isMapLoading" class="map-loading">
+              <div class="loading-spinner"></div>
+              <div class="loading-text">地图加载中...</div>
+            </div>
             <!-- 子菜单弹出层 -->
             <div v-if="showSubMenu" class="sub-menu-overlay">
               <div class="sub-menu-content">
@@ -89,8 +95,41 @@
           </div>
         </div>
 
-        <div class="panel device-panel">
-          <div class="panel-header device-panel-header">
+        <!-- 安防监控 - 放在右上角 -->
+        <div class="panel security-panel">
+          <div class="panel-header">
+            <h3 class="panel-title-clickable" @click="goToMonitor">安防监控</h3>
+          </div>
+          <div class="panel-content">
+            <div class="video-container">
+              <div class="video-placeholder">
+                <el-icon class="video-icon">
+                  <VideoCamera />
+                </el-icon>
+                <p>{{ currentCamera }} 监控画面</p>
+              </div>
+            </div>
+            <div class="camera-selector">
+              <el-select v-model="currentCamera" placeholder="选择摄像头" style="width: 100%">
+                <el-option v-for="camera in cameras" :key="camera.id" :label="camera.name" :value="camera.name" />
+              </el-select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 报警趋势 - 放在农场看板下面 -->
+        <div class="panel alarm-panel">
+          <div class="panel-header">
+            <h3>报警趋势</h3>
+          </div>
+          <div class="panel-content">
+            <div ref="alarmChartRef" class="alarm-chart"></div>
+          </div>
+        </div>
+
+        <!-- 设备统计 + 能源监控 合并 - 放在右下角 -->
+        <div class="panel combined-panel">
+          <div class="panel-header">
             <h3 class="panel-title-clickable" @click="goToDeviceDetail">设备统计</h3>
             <div class="online-offline">
               <div class="status-item">
@@ -104,85 +143,40 @@
               </div>
             </div>
           </div>
-          <div class="device-panel-content">
-            <div class="device-grid-container">
-              <div class="device-item" v-for="(device, index) in deviceList" :key="index">
-                <div class="device-name">{{ device.name }}</div>
-                <div class="device-icon">
-                  <component :is="iconComponents[device.icon]" :size="32" :color="device.color" class="icon" />
-                </div>
-                <div class="device-count" :style="{ color: device.color }">{{ device.count }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="bottom-left-container">
-          <div class="panel energy-panel">
-            <div class="panel-header">
-              <h3>能源监控</h3>
-            </div>
-            <div class="energy-panel-content">
-              <div class="energy-scroll-container">
-                <div class="energy-item">
-                  <div class="energy-label">当日总水耗</div>
-                  <div class="energy-icon">
-                    <el-icon :size="40" color="#67C23A">
-                      <Refrigerator />
-                    </el-icon>
-                  </div>
-                  <div class="energy-value">8,450 m³</div>
-                </div>
-                <div class="energy-item">
-                  <div class="energy-label">当日总电耗</div>
-                  <div class="energy-icon">
-                    <el-icon :size="40" color="#409EFF">
-                      <Lightning />
-                    </el-icon>
-                  </div>
-                  <div class="energy-value">12,580 kWh</div>
-                </div>
-                <div class="energy-item">
-                  <div class="energy-label">当日总气耗</div>
-                  <div class="energy-icon">
-                    <el-icon :size="40" color="#E6A23C">
-                      <Sunny />
-                    </el-icon>
-                  </div>
-                  <div class="energy-value">3,200 m³</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel security-panel">
-            <div class="panel-header">
-              <h3 class="panel-title-clickable" @click="goToMonitor">安防监控</h3>
-            </div>
-            <div class="panel-content">
-              <div class="video-container">
-                <div class="video-placeholder">
-                  <el-icon class="video-icon">
-                    <VideoCamera />
-                  </el-icon>
-                  <p>{{ currentCamera }} 监控画面</p>
-                </div>
-              </div>
-              <div class="camera-selector">
-                <el-select v-model="currentCamera" placeholder="选择摄像头" style="width: 100%">
-                  <el-option v-for="camera in cameras" :key="camera.id" :label="camera.name" :value="camera.name" />
-                </el-select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel alarm-panel">
+          <div class="divider"></div>
           <div class="panel-header">
-            <h3>报警趋势</h3>
+            <h3>能源监控</h3>
           </div>
-          <div class="panel-content">
-            <div ref="alarmChartRef" class="alarm-chart"></div>
+          <div class="combined-content">
+            <div class="energy-scroll-container">
+              <div class="energy-item">
+                <div class="energy-label">当日总水耗</div>
+                <div class="energy-icon">
+                  <el-icon :size="40" color="#67C23A">
+                    <Refrigerator />
+                  </el-icon>
+                </div>
+                <div class="energy-value">8,450 m³</div>
+              </div>
+              <div class="energy-item">
+                <div class="energy-label">当日总电耗</div>
+                <div class="energy-icon">
+                  <el-icon :size="40" color="#409EFF">
+                    <Lightning />
+                  </el-icon>
+                </div>
+                <div class="energy-value">12,580 kWh</div>
+              </div>
+              <div class="energy-item">
+                <div class="energy-label">当日总气耗</div>
+                <div class="energy-icon">
+                  <el-icon :size="40" color="#E6A23C">
+                    <Sunny />
+                  </el-icon>
+                </div>
+                <div class="energy-value">3,200 m³</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -193,7 +187,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, FullScreen, VideoCamera, Warning, Plus, Delete, Edit, Refresh, Download, Lightning, Connection, Operation, Share, CircleCheck, CircleClose, Sunny, Refrigerator, Cpu, Bell, Close, Box, Food, Crop } from '@element-plus/icons-vue'
+import { ArrowLeft, FullScreen, VideoCamera, Lightning, Sunny, Refrigerator, Close, Box, Food, Crop } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import { createChinaMapOption, createProvinceMapOption } from '@/utils/chinaMapConfig'
@@ -293,22 +287,32 @@ const goToFarmDetail = (farm: any) => {
 const initMapChart = () => {
   if (!mapChartRef.value) return
 
-  mapChart = echarts.init(mapChartRef.value)
-  const option = createChinaMapOption()
-  mapChart.setOption(option)
+  isMapLoading.value = true
+  
+  try {
+    mapChart = echarts.init(mapChartRef.value)
+    
+    // 加载地图数据
+    const option = createChinaMapOption()
+    mapChart.setOption(option, true)
 
-  // 地图点击事件 - 下钻到省级
-  mapChart.on('click', (params: any) => {
-    if (currentMapLevel.value === 'china') {
-      const provinceName = params.name
-      if (provinceName) {
-        showProvinceMap(provinceName)
+    // 地图点击事件 - 下钻到省级
+    mapChart.on('click', (params: any) => {
+      if (currentMapLevel.value === 'china') {
+        const provinceName = params.name
+        if (provinceName) {
+          showProvinceMap(provinceName)
+        }
       }
-    }
-  })
+    })
 
-  // 只需要一次 resize
-  setTimeout(() => mapChart?.resize(), 50)
+    // 只需要一次 resize
+    setTimeout(() => mapChart?.resize(), 50)
+  } catch (error) {
+    console.error('地图初始化失败:', error)
+  } finally {
+    isMapLoading.value = false
+  }
 }
 
 // 显示省级地图
@@ -343,38 +347,7 @@ const handleContextMenu = (e: MouseEvent) => {
   // 全国地图不做任何事（已禁用右键）
 }
 
-const iconComponents: any = {
-  Warning,
-  Plus,
-  Delete,
-  Edit,
-  VideoCamera,
-  Refresh,
-  Download,
-  Lightning,
-  Connection,
-  Operation,
-  Share,
-  CircleCheck,
-  CircleClose,
-  Sunny,
-  Refrigerator,
-  Cpu,
-  Bell
-}
 
-const devices = ref([
-  { name: '保温灯', count: 2340, color: '#e6a23c', icon: 'Sunny' },
-  { name: '智能花洒', count: 1890, color: '#409eff', icon: 'Refrigerator' },
-  { name: '环控器', count: 560, color: '#67c23a', icon: 'Operation' },
-  { name: '智能网关', count: 120, color: '#909399', icon: 'Connection' },
-  { name: '智能水表', count: 890, color: '#409eff', icon: 'Refrigerator' },
-  { name: '智能电表', count: 1230, color: '#e6a23c', icon: 'Lightning' },
-  { name: '在线', count: 5870, color: '#67c23a', icon: 'CircleCheck' },
-  { name: '离线', count: 160, color: '#f56c6c', icon: 'CircleClose' }
-])
-
-const deviceList = devices.value.filter(d => d.name !== '在线' && d.name !== '离线')
 
 const currentCamera = ref('大门入口')
 const cameras = ref([
@@ -385,6 +358,8 @@ const cameras = ref([
   { id: 5, name: '办公区域' },
   { id: 6, name: '围墙周界' }
 ])
+
+const isMapLoading = ref(false)
 
 // 生成近30天数据
 const generateLast30Days = () => {
@@ -566,15 +541,33 @@ const handleResize = () => {
   mapChart?.resize()
 }
 
-onMounted(async () => {
+onMounted(() => {
   // 挂载全局事件处理函数
   ; (window as any).handleFarmClick = handleFarmClick
 
   // 优先初始化地图（用户第一眼看到的）
   nextTick(() => {
-    initMapChart()
+    // 使用 requestIdleCallback 来优化渲染性能
+    const rIC = (window as any).requestIdleCallback
+    if (rIC) {
+      rIC(() => {
+        initMapChart()
+      })
+    } else {
+      initMapChart()
+    }
+    
     // 延迟初始化报警图表，避免阻塞主线程
-    setTimeout(() => initAlarmChart(), 300)
+    setTimeout(() => {
+      const rIC2 = (window as any).requestIdleCallback
+      if (rIC2) {
+        rIC2(() => {
+          initAlarmChart()
+        })
+      } else {
+        initAlarmChart()
+      }
+    }, 500)
   })
 
   window.addEventListener('resize', handleResize)
@@ -632,7 +625,7 @@ onUnmounted(() => {
 .grid-container {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 1.5fr 1fr;
   gap: 20px;
   width: 100%;
   height: 100%;
@@ -648,6 +641,27 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* 合并面板样式 */
+.combined-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(64, 158, 255, 0.3);
+  margin: 10px 0;
+}
+
+.combined-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .panel {
@@ -679,6 +693,15 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* 覆盖合并面板中的第一个header */
+.combined-panel .panel-header:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+  padding-bottom: 10px;
 }
 
 .online-offline {
@@ -829,6 +852,41 @@ onUnmounted(() => {
   width: 100%;
   min-height: 0;
   height: 100%;
+  position: relative;
+}
+
+.map-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 41, 59, 0.9);
+  z-index: 100;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(64, 158, 255, 0.3);
+  border-top: 3px solid #409eff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
 }
 
 .map-chart {
