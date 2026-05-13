@@ -280,8 +280,8 @@ const closeSubMenu = () => {
 // 跳转到厂详情
 const goToFarmDetail = (farm: any) => {
   closeSubMenu()
-  // 跳转到首页，并选中对应的工厂
-  router.push({ path: '/', query: { farmId: farm.id, farmName: farm.name } })
+  // 跳转到农场详情，并选中对应的工厂
+  router.push({ path: '/farm', query: { farmId: farm.id, farmName: farm.name } })
 }
 
 const initMapChart = () => {
@@ -496,7 +496,7 @@ const initAlarmChart = () => {
           const year = new Date().getFullYear()
           const dateStr = `${year}-${dates[dataIndex]}`
           router.push({
-            path: '/alarm-detail',
+            path: '/farm/alarm-detail',
             query: { date: dateStr }
           })
         }
@@ -508,22 +508,22 @@ const initAlarmChart = () => {
     const year = new Date().getFullYear()
     const dateStr = `${year}-${params.name}`
     router.push({
-      path: '/alarm-detail',
+      path: '/farm/alarm-detail',
       query: { date: dateStr }
     })
   })
 }
 
 const goBack = () => {
-  router.push('/')
+  router.push('/farm')
 }
 
 const goToDeviceDetail = () => {
-  router.push('/device-detail')
+  router.push('/farm/device-detail')
 }
 
 const goToMonitor = () => {
-  router.push('/monitor-detail')
+  router.push('/farm/monitor-detail')
 }
 
 const toggleFullscreen = () => {

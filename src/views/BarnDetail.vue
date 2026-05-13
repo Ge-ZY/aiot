@@ -1,11 +1,14 @@
 <template>
-  <div class="barn-detail">
-    <div class="page-header">
+  <div class="barn-detail" :class="{ fullscreen: isFullscreen }">
+    <div class="barn-detail-header">
       <div class="header-left">
+        <el-button type="primary" :icon="ArrowLeft" @click="goBack">返回</el-button>
+      </div>
+      <div class="header-center">
         <h1>{{ barnName }} - 详情监控</h1>
       </div>
       <div class="header-right">
-        <el-select v-model="selectedBarn" placeholder="请选择栏舍" @change="handleBarnChange" style="width: 200px;">
+        <el-select v-model="selectedBarn" placeholder="请选择栏舍" @change="handleBarnChange" style="width: 200px; margin-right: 10px;">
           <el-option
             v-for="barn in barnList"
             :key="barn.id"
@@ -13,10 +16,12 @@
             :value="barn.id"
           />
         </el-select>
+        <el-button type="primary" :icon="FullScreen" @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏'
+        }}</el-button>
       </div>
     </div>
 
-    <div class="detail-content">
+    <div class="barn-detail-content">
       <div class="top-section">
         <div class="panel video-panel">
           <div class="panel-header">
@@ -230,14 +235,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { VideoCamera, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { VideoCamera, ArrowLeft, ArrowRight, FullScreen } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 
 const route = useRoute()
+const router = useRouter()
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
+const isFullscreen = ref(false)
 
 const barnList = ref([
   { id: 1, name: '保育舍1' },
@@ -251,6 +258,24 @@ const barnName = computed(() => {
   const barn = barnList.value.find(b => b.id === selectedBarn.value)
   return barn ? barn.name : '保育舍'
 })
+
+const goBack = () => {
+  router.push('/farm')
+}
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.log(err)
+    })
+    isFullscreen.value = true
+  } else {
+    document.exitFullscreen().catch(err => {
+      console.log(err)
+    })
+    isFullscreen.value = false
+  }
+}
 
 // 摄像头相关
 const selectedCamera = ref<number>(1)
@@ -270,7 +295,6 @@ const currentCameraName = computed(() => {
 const handlePrevCamera = () => {
   const currentIndex = cameraList.value.findIndex(c => c.id === selectedCamera.value)
   if (currentIndex === 0) {
-    // 第一个的上一个是最后一个
     selectedCamera.value = cameraList.value[cameraList.value.length - 1].id
   } else {
     selectedCamera.value = cameraList.value[currentIndex - 1].id
@@ -280,7 +304,6 @@ const handlePrevCamera = () => {
 const handleNextCamera = () => {
   const currentIndex = cameraList.value.findIndex(c => c.id === selectedCamera.value)
   if (currentIndex === cameraList.value.length - 1) {
-    // 最后一个的下一个是第一个
     selectedCamera.value = cameraList.value[0].id
   } else {
     selectedCamera.value = cameraList.value[currentIndex + 1].id
@@ -322,7 +345,6 @@ const generateRuntime = () => {
 }
 
 const handleBarnChange = () => {
-  // 切换栏舍时重新生成数据
   if (chartInstance) {
     const dates = generateDateData()
     const { avgTemp, heatTemp, coolTemp, targetTemp } = generateTempData()
@@ -334,7 +356,6 @@ const handleBarnChange = () => {
     option.series[3].data = targetTemp
     chartInstance.setOption(option)
   }
-  // 随机更新设备状态
   const modes = ['min', 'normal', 'max', 'emergency']
   const openings = ['full', 'close', 'half', 'moving']
   const windowModes = ['manual', 'auto', 'timer']
@@ -368,7 +389,6 @@ const handleBarnChange = () => {
   }
 }
 
-// 初始化选择默认选中栏舍
 const initSelectedBarn = () => {
   const nameFromRoute = route.query.name as string
   if (nameFromRoute) {
@@ -378,7 +398,6 @@ const initSelectedBarn = () => {
       return
     }
   }
-  // 如果没有找到，默认选中第一个
   selectedBarn.value = barnList.value[0].id
 }
 
@@ -415,7 +434,6 @@ const generateTempData = () => {
 const initChart = () => {
   if (!chartRef.value) return
   
-  // 确保容器有尺寸
   const container = chartRef.value
   if (container.offsetWidth === 0 || container.offsetHeight === 0) {
     setTimeout(() => initChart(), 50)
@@ -549,13 +567,15 @@ const initChart = () => {
   }
 
   chartInstance.setOption(option)
-  
-  // 确保图表正确渲染
   chartInstance.resize()
 }
 
 const handleResize = () => {
   chartInstance?.resize()
+}
+
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
 }
 
 onMounted(() => {
@@ -566,10 +586,12 @@ onMounted(() => {
     }, 100)
   })
   window.addEventListener('resize', handleResize)
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   chartInstance?.dispose()
 })
 </script>
@@ -577,35 +599,54 @@ onUnmounted(() => {
 <style scoped>
 .barn-detail {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   color: white;
-  padding: 20px;
   box-sizing: border-box;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.page-header {
+.barn-detail.fullscreen {
+  height: 100vh;
+  width: 100vw;
+}
+
+.barn-detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  padding: 15px 30px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(64, 158, 255, 0.3);
+  flex-shrink: 0;
 }
 
-.page-header h1 {
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-center h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
   background: linear-gradient(90deg, #409eff, #67c23a);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.detail-content {
+.barn-detail-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  min-height: calc(100vh - 80px);
+  padding: 20px 30px;
+  overflow-y: auto;
 }
 
 .top-section {

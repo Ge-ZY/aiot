@@ -10,28 +10,24 @@
         @select="handleMenuSelect"
       >
         <el-menu-item index="/">
-          <el-icon><House /></el-icon>
-          <span>首页</span>
-        </el-menu-item>
-        <el-menu-item index="/dashboard">
           <el-icon><Monitor /></el-icon>
           <span>大屏可视化</span>
         </el-menu-item>
-        <el-menu-item index="/barn-detail">
-          <el-icon><VideoCamera /></el-icon>
-          <span>栏舍详情</span>
+        <el-menu-item index="/farm">
+          <el-icon><House /></el-icon>
+          <span>农场详情</span>
         </el-menu-item>
-        <el-menu-item index="/alarm-detail">
+        <el-menu-item index="/farm/alarm-detail">
           <el-icon><Warning /></el-icon>
           <span>报警详情</span>
         </el-menu-item>
-        <el-menu-item index="/device-detail">
+        <el-menu-item index="/farm/device-detail">
           <el-icon><Setting /></el-icon>
           <span>设备详情</span>
         </el-menu-item>
-        <el-menu-item index="/monitor-detail">
+        <el-menu-item index="/farm/monitor-detail">
           <el-icon><Camera /></el-icon>
-          <span>监控点</span>
+          <span>监控点位</span>
         </el-menu-item>
       </el-menu>
     </div>
@@ -41,34 +37,23 @@
           <component :is="Component" />
         </transition>
       </router-view>
-      <div v-if="isNavigating" class="navigating-overlay">
-        <div class="navigating-spinner"></div>
-        <div class="navigating-text">加载中...</div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, Monitor, VideoCamera, Warning, Setting, Camera } from '@element-plus/icons-vue'
+import { House, Monitor, Warning, Setting, Camera } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const activeMenu = computed(() => route.path)
-const isNavigating = ref(false)
 
 const handleMenuSelect = (index: string) => {
   if (index === route.path) return
   
-  if (index === '/dashboard') {
-    isNavigating.value = true
-  }
-  
-  router.push(index).finally(() => {
-    isNavigating.value = false
-  })
+  router.push(index)
 }
 </script>
 
@@ -114,16 +99,17 @@ const handleMenuSelect = (index: string) => {
 .sidebar-menu :deep(.el-menu-item) {
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: none !important;
 }
 
-.sidebar-menu :deep(.el-menu-item:hover),
-.sidebar-menu :deep(.el-menu-item.is-active) {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+.sidebar-menu :deep(.el-menu-item:hover) {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .sidebar-menu :deep(.el-menu-item.is-active) {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   border-right: 3px solid #1890ff;
 }
 
@@ -142,39 +128,5 @@ const handleMenuSelect = (index: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.navigating-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(240, 242, 245, 0.9);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.navigating-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(24, 144, 255, 0.2);
-  border-top: 3px solid #1890ff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.navigating-text {
-  color: #666;
-  font-size: 14px;
 }
 </style>

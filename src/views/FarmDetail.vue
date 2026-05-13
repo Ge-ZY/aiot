@@ -1,6 +1,6 @@
 <template>
   <LayoutWithSidebar v-slot="{ currentFactory, selectedFactoryType }">
-    <div class="home-content">
+    <div class="farm-detail-content">
       <div class="content-header">
         <h2>{{ currentFactory || '请选择工厂' }}</h2>
       </div>
@@ -133,6 +133,7 @@ import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
+
 
 const router = useRouter()
 
@@ -283,6 +284,7 @@ watch([currentFactoryType, chickenType, aquaticType], () => {
 
 onMounted(() => {
   setTimeout(initChart, 100)
+  
 })
 
 onUnmounted(() => {
@@ -293,7 +295,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.home-content {
+.farm-detail-content {
   height: 100%;
   display: flex;
   flex-direction: column;

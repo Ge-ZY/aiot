@@ -4,17 +4,22 @@ import MainLayout from '../layout/MainLayout.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
+    name: 'Dashboard',
+    component: () => import('../views/Dashboard.vue')
+  },
+  {
+    path: '/barn-detail',
+    name: 'BarnDetail',
+    component: () => import('../views/BarnDetail.vue')
+  },
+  {
+    path: '/farm',
     component: MainLayout,
     children: [
       {
         path: '',
-        name: 'Home',
-        component: () => import('../views/Home.vue')
-      },
-      {
-        path: 'barn-detail',
-        name: 'BarnDetail',
-        component: () => import('../views/BarnDetail.vue')
+        name: 'FarmDetail',
+        component: () => import('../views/FarmDetail.vue')
       },
       {
         path: 'alarm-detail',
@@ -32,11 +37,6 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/MonitorDetail.vue')
       }
     ]
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('../views/Dashboard.vue')
   }
 ]
 
