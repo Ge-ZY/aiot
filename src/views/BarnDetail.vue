@@ -20,11 +20,31 @@
       <div class="top-section">
         <div class="panel video-panel">
           <div class="panel-header">
-            <h3>视频监控</h3>
+            <div class="panel-header-content">
+              <h3>视频监控</h3>
+              <el-select v-model="selectedCamera" placeholder="选择摄像头" size="small" style="width: 150px;">
+                <el-option
+                  v-for="camera in cameraList"
+                  :key="camera.id"
+                  :label="camera.name"
+                  :value="camera.id"
+                />
+              </el-select>
+            </div>
           </div>
-          <div class="video-placeholder">
-            <el-icon class="video-icon"><VideoCamera /></el-icon>
-            <p>舍内监控画面</p>
+          <div class="video-container">
+            <div class="video-placeholder">
+              <el-button class="switch-btn switch-btn-left" circle @click="handlePrevCamera">
+                <el-icon><ArrowLeft /></el-icon>
+              </el-button>
+              <div class="video-content">
+                <el-icon class="video-icon"><VideoCamera /></el-icon>
+                <p>{{ currentCameraName }}监控画面</p>
+              </div>
+              <el-button class="switch-btn switch-btn-right" circle @click="handleNextCamera">
+                <el-icon><ArrowRight /></el-icon>
+              </el-button>
+            </div>
           </div>
         </div>
 
@@ -211,7 +231,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { VideoCamera } from '@element-plus/icons-vue'
+import { VideoCamera, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 
@@ -231,6 +251,41 @@ const barnName = computed(() => {
   const barn = barnList.value.find(b => b.id === selectedBarn.value)
   return barn ? barn.name : '保育舍'
 })
+
+// 摄像头相关
+const selectedCamera = ref<number>(1)
+const cameraList = ref([
+  { id: 1, name: '大门入口' },
+  { id: 2, name: '猪舍A区' },
+  { id: 3, name: '猪舍B区' },
+  { id: 4, name: '饲料仓库' },
+  { id: 5, name: '办公区域' },
+  { id: 6, name: '围墙周界' }
+])
+const currentCameraName = computed(() => {
+  const camera = cameraList.value.find(c => c.id === selectedCamera.value)
+  return camera ? camera.name : '舍内'
+})
+
+const handlePrevCamera = () => {
+  const currentIndex = cameraList.value.findIndex(c => c.id === selectedCamera.value)
+  if (currentIndex === 0) {
+    // 第一个的上一个是最后一个
+    selectedCamera.value = cameraList.value[cameraList.value.length - 1].id
+  } else {
+    selectedCamera.value = cameraList.value[currentIndex - 1].id
+  }
+}
+
+const handleNextCamera = () => {
+  const currentIndex = cameraList.value.findIndex(c => c.id === selectedCamera.value)
+  if (currentIndex === cameraList.value.length - 1) {
+    // 最后一个的下一个是第一个
+    selectedCamera.value = cameraList.value[0].id
+  } else {
+    selectedCamera.value = cameraList.value[currentIndex + 1].id
+  }
+}
 
 const devices = ref({
   fan24: {
@@ -587,11 +642,23 @@ onUnmounted(() => {
   border-bottom: 1px solid rgba(64, 158, 255, 0.3);
 }
 
+.panel-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .panel-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: #409eff;
+}
+
+.video-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .video-placeholder {
@@ -603,6 +670,43 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.6);
+  min-height: 300px;
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.switch-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(64, 158, 255, 0.2);
+  border: 1px solid rgba(64, 158, 255, 0.4);
+  color: #409eff;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+
+.video-placeholder:hover .switch-btn {
+  opacity: 1;
+}
+
+.switch-btn:hover {
+  background: rgba(64, 158, 255, 0.4);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.switch-btn-left {
+  left: 10px;
+}
+
+.switch-btn-right {
+  right: 10px;
 }
 
 .video-icon {

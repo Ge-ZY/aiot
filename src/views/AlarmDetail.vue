@@ -1,23 +1,6 @@
 <template>
-  <div class="home-container">
-    <div class="sidebar">
-      <el-card>
-        <template #header>
-          <div style="display: flex; justify-content: space-between; align-items: center">
-            <h4>公司列表</h4>
-            <el-input v-model="filterText" placeholder="输入关键字过滤" size="small" style="width: 150px" clearable />
-          </div>
-        </template>
-        <el-tree :data="companies" node-key="id" :props="{
-          label: 'name',
-          value: 'id',
-          children: 'children'
-        }" @node-click="handleNodeClick" highlight-current
-          :expand-on-click-node="false" :filter-node-method="filterNode" ref="companyTree">
-        </el-tree>
-      </el-card>
-    </div>
-    <div class="main-content">
+  <LayoutWithSidebar v-slot="{ currentFactory }">
+    <div class="alarm-content">
       <div class="content-header">
         <div class="header-left">
           <h2>{{ currentFactory || '请选择工厂' }} - 报警详情</h2>
@@ -97,18 +80,18 @@
         </div>
       </div>
     </div>
-  </div>
+  </LayoutWithSidebar>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh, Download, Search } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import * as XLSX from 'xlsx'
 import type { EChartsOption } from 'echarts'
-import { sdk } from '@/utils/sdk'
+import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 
 interface AlarmItem {
   id: number
@@ -121,14 +104,6 @@ interface AlarmItem {
 const route = useRoute()
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
-
-const companies = ref<any[]>([])
-const filterText = ref('')
-const companyTree = ref()
-
-const currentNodeData = ref<any>(null)
-const lastLeafNode = ref<any>(null)
-const currentFactory = ref('')
 
 const selectedDate = ref<string>(
   (route.query.date as string) || new Date().toISOString().split('T')[0]
@@ -203,68 +178,8 @@ const filteredList = computed(() => {
 })
 
 const handleDateChange = () => {
-  // 日期变化时自动更新数据
   ElMessage.success('已切换至' + selectedDate.value)
 }
-
-const handleNodeClick = async (data: any) => {
-  currentNodeData.value = data
-  if (data.children.length === 0) {
-    refreshNodeData()
-  }
-
-  const isLeafNode = !data.children || data.children.length === 0
-  
-  if (isLeafNode) {
-    lastLeafNode.value = data
-    currentFactory.value = data.name
-    console.log('点击叶子节点，:', data)
-  } else {
-    if (lastLeafNode.value) {
-      currentFactory.value = lastLeafNode.value.name
-    }
-  }
-}
-
-async function refreshNodeData() {
-  if (!currentNodeData.value) return
-  
-  try {
-    const res = await sdk.company.treenode(currentNodeData.value.id)
-    if (res.data && res.data.data) {
-      currentNodeData.value.children = res.data.data.map((child: any) => ({
-        ...child,
-        children: []
-      }))
-      companyTree.value?.updateKeyChildren(currentNodeData.value.id, currentNodeData.value.children)
-    }
-  } catch (err) {
-    console.error('Failed to refresh node data:', err)
-  }
-}
-
-async function loadCompanys() {
-  try {
-    const res = await sdk.company.treenode()
-    if (res.data && res.data.data) {
-      companies.value = res.data.data.map((group: any) => ({
-        ...group,
-        children: []
-      }))
-    }
-  } catch (err) {
-    console.error('Failed to load groups:', err)
-  }
-}
-
-function filterNode(value: string, data: any) {
-  if (!value) return true
-  return data.name.includes(value) || data.code.includes(value)
-}
-
-watch(filterText, (val) => {
-  companyTree.value?.filter(val)
-})
 
 const alarmCount = computed(() => filteredList.value.length)
 
@@ -351,8 +266,6 @@ const initChart = () => {
   }
   
   chart.setOption(option)
-  
-  // 确保图表正确渲染
   chart.resize()
 }
 
@@ -387,8 +300,7 @@ const handleResize = () => {
   chart?.resize()
 }
 
-onMounted(async () => {
-  await loadCompanys()
+onMounted(() => {
   nextTick(() => {
     setTimeout(() => {
       initChart()
@@ -404,39 +316,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.home-container {
-  display: flex;
+.alarm-content {
   height: 100%;
-  width: 100%;
-}
-
-.sidebar {
-  width: 300px;
-  flex-shrink: 0;
-  overflow: auto;
-  border-right: 1px solid #e6e6e6;
-}
-
-.sidebar :deep(.el-tree) {
-  background: transparent;
-}
-
-.sidebar :deep(.el-tree-node__content) {
-  height: 36px;
-}
-
-.sidebar :deep(.el-tree-node__content:hover) {
-  background-color: #f0f7ff;
-}
-
-.sidebar :deep(.el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content) {
-  background-color: #e6f7ff;
-  color: #1890ff;
-}
-
-.main-content {
-  flex: 1;
-  padding: 20px;
   overflow-y: auto;
 }
 
