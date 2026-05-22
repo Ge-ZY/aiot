@@ -2,17 +2,30 @@
   <div class="dashboard" :class="{ fullscreen: isFullscreen }">
     <!-- 农场指标 tooltip - 放在最外层，fixed 定位 -->
     <div v-if="showFarmIndicatorTooltip" class="farm-tooltip" :style="{ left: farmTooltipPosition.x + 'px', top: farmTooltipPosition.y + 'px' }">
-      <div class="farm-tooltip-item">
+      <div v-if="currentTooltipType < 2" class="farm-tooltip-item">
         <span class="farm-tooltip-label">农场总数:</span>
         <span class="farm-tooltip-value">2725</span>
       </div>
-      <div class="farm-tooltip-item">
+      <div v-if="currentTooltipType < 2" class="farm-tooltip-item">
         <span class="farm-tooltip-label">栏舍总数:</span>
         <span class="farm-tooltip-value">12400</span>
       </div>
-      <div class="farm-tooltip-item">
+      <div v-if="currentTooltipType < 2" class="farm-tooltip-item">
         <span class="farm-tooltip-label">存栏总量:</span>
         <span class="farm-tooltip-value">400万</span>
+      </div>
+      <!-- 水产专用 -->
+      <div v-if="currentTooltipType === 2" class="farm-tooltip-item">
+        <span class="farm-tooltip-label">农场总数:</span>
+        <span class="farm-tooltip-value">2725</span>
+      </div>
+      <div v-if="currentTooltipType === 2" class="farm-tooltip-item">
+        <span class="farm-tooltip-label">池塘总数:</span>
+        <span class="farm-tooltip-value">3200</span>
+      </div>
+      <div v-if="currentTooltipType === 2" class="farm-tooltip-item">
+        <span class="farm-tooltip-label">养殖面积:</span>
+        <span class="farm-tooltip-value">85600</span>
       </div>
     </div>
     
@@ -79,13 +92,14 @@
                   </el-icon>
                 </div>
                 <div class="sub-menu-list">
+                  <div v-if="subMenuFarms.length === 0" class="sub-menu-empty">暂无工厂数据</div>
                   <div v-for="(farm, index) in subMenuFarms" :key="index" class="sub-menu-item"
+                    :class="{ 'farm-highlighted': highlightedFarmId === farm.id }"
                     @click="goToFarmDetail(farm)">
-                    <div class="farm-name">{{ farm.name }}</div>
-                    <div class="farm-info">
-                      <span class="info-tag">{{ farm.type }}</span>
-                      <span class="info-status" :class="farm.status === '正常' ? 'status-normal' : 'status-warning'">
-                        {{ farm.status }}
+                    <div class="farm-row">
+                      <span class="farm-name">{{ farm.name }}</span>
+                      <span class="farm-status" :class="farm.status === '报警' ? 'status-alarm' : 'status-normal'">
+                        {{ farm.status === '报警' && farm.alarmCount ? `报警 ${farm.alarmCount}条` : farm.status }}
                       </span>
                     </div>
                   </div>
@@ -117,13 +131,33 @@
           </div>
         </div>
 
-        <!-- 报警趋势 - 放在农场看板下面 -->
+        <!-- 报警信息列表 -->
         <div class="panel alarm-panel">
-          <div class="panel-header">
-            <h3>报警趋势</h3>
+          <div class="panel-header alarm-list-header">
+            <h3 class="panel-title-clickable" @click="goToAlarmDetail">报警信息</h3>
+            <span class="alarm-total-badge">{{ alarmList.length }} 条</span>
           </div>
-          <div class="panel-content">
-            <div ref="alarmChartRef" class="alarm-chart"></div>
+          <div class="panel-content alarm-list-content">
+            <div v-if="alarmList.length === 0" class="alarm-list-empty">暂无报警信息</div>
+            <div
+              v-for="alarm in alarmList"
+              :key="alarm.id"
+              class="alarm-list-item"
+              :class="{ active: selectedAlarmId === alarm.id }"
+              @click="flyToFactory(alarm)"
+            >
+              <div class="alarm-item-top">
+                <span class="alarm-level" :class="`level-${alarm.level}`">{{ alarm.level }}</span>
+                <span class="alarm-time">{{ alarm.time }}</span>
+              </div>
+              <div class="alarm-farm-name">{{ alarm.farmName }}</div>
+              <div class="alarm-location">{{ alarm.province }} · {{ alarm.city }} · {{ alarm.barn }}</div>
+              <div class="alarm-desc">{{ alarm.type }}：{{ alarm.description }}</div>
+              <div class="alarm-fly-hint">
+                <el-icon><Location /></el-icon>
+                <span>点击定位到工厂</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -132,12 +166,12 @@
           <div class="panel-header">
             <h3 class="panel-title-clickable" @click="goToDeviceDetail">设备统计</h3>
             <div class="online-offline">
-              <div class="status-item">
+              <div class="status-item status-clickable" @click="goToDeviceDetail">
                 <span class="status-label">在线</span>
                 <span class="status-value online">5,870</span>
               </div>
               <div class="status-divider">|</div>
-              <div class="status-item">
+              <div class="status-item status-clickable" @click="goToDeviceDetail">
                 <span class="status-label">离线</span>
                 <span class="status-value offline">160</span>
               </div>
@@ -187,21 +221,32 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, FullScreen, VideoCamera, Lightning, Sunny, Refrigerator, Close, Box, Food, Crop } from '@element-plus/icons-vue'
+import { ArrowLeft, FullScreen, VideoCamera, Lightning, Sunny, Refrigerator, Close, Box, Food, Crop, Location } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import type { EChartsOption } from 'echarts'
-import { createChinaMapOption, createProvinceMapOption } from '@/utils/chinaMapConfig'
+import { createChinaMapOption, createProvinceMapOption, type CityFarm, type AlarmMapProvider } from '@/utils/chinaMapConfig'
+
+interface DashboardAlarm {
+  id: number
+  time: string
+  farmId: number
+  farmName: string
+  city: string
+  province: string
+  barn: string
+  type: string
+  description: string
+  level: '严重' | '一般' | '提示'
+}
 
 const router = useRouter()
 const isFullscreen = ref(false)
-const alarmChartRef = ref<HTMLElement | null>(null)
 const mapChartRef = ref<HTMLElement | null>(null)
-let alarmChart: echarts.ECharts | null = null
 let mapChart: echarts.ECharts | null = null
 
 // 农场指标 tooltip
 const showFarmIndicatorTooltip = ref(false)
 const farmTooltipPosition = ref({ x: 0, y: 0 })
+const currentTooltipType = ref<number>(0) // 0=猪场, 1=鸡场, 2=水产
 
 // 地图当前层级：'china' 或省份名称
 const currentMapLevel = ref<'china' | string>('china')
@@ -209,37 +254,120 @@ const currentMapLevel = ref<'china' | string>('china')
 // 子菜单相关状态
 const showSubMenu = ref(false)
 const subMenuTitle = ref('')
-const subMenuFarms = ref<any[]>([])
+const subMenuFarms = ref<CityFarm[]>([])
 
-// 模拟的厂数据（尽量对应后台管理页面存在的厂）
-const mockFarms = {
-  pig: [
-    { id: 1, name: '保育舍1', type: '猪场', status: '正常', company: '正芯农牧' },
-    { id: 2, name: '保育舍2', type: '猪场', status: '正常', company: '正芯农牧' },
-    { id: 3, name: '保育舍3', type: '猪场', status: '正常', company: '正芯农牧' },
-    { id: 4, name: '保育舍4', type: '猪场', status: '告警', company: '正芯农牧' },
-    { id: 5, name: '分娩舍1', type: '猪场', status: '正常', company: '正芯农牧' },
-  ],
-  chicken: [
-    { id: 6, name: '蛋鸡舍A区', type: '鸡场', status: '正常', company: '正芯农牧' },
-    { id: 7, name: '蛋鸡舍B区', type: '鸡场', status: '正常', company: '正芯农牧' },
-    { id: 8, name: '肉鸡舍1', type: '鸡场', status: '告警', company: '正芯农牧' },
-    { id: 9, name: '肉鸡舍2', type: '鸡场', status: '正常', company: '正芯农牧' },
-  ],
-  aquatic: [
-    { id: 10, name: '鱼塘1区', type: '水产', status: '正常', company: '正芯农牧' },
-    { id: 11, name: '鱼塘2区', type: '水产', status: '正常', company: '正芯农牧' },
-    { id: 12, name: '虾塘1区', type: '水产', status: '告警', company: '正芯农牧' },
-  ]
+// 基础工厂模板（对应后台管理页面存在的厂）
+const baseFarmTemplates: CityFarm[] = [
+  { id: 1, name: '正芯农牧第一猪场', status: '正常' },
+  { id: 2, name: '正芯农牧第二猪场', status: '正常' },
+  { id: 3, name: '正芯农牧第三猪场', status: '正常' },
+  { id: 4, name: '正芯农牧第四猪场', status: '报警', alarmCount: 3 },
+  { id: 5, name: '正芯农牧第五猪场', status: '正常' },
+  { id: 6, name: '正芯农牧第一鸡场', status: '正常' },
+  { id: 7, name: '正芯农牧第二鸡场', status: '正常' },
+  { id: 8, name: '正芯农牧第三鸡场', status: '报警', alarmCount: 2 },
+  { id: 9, name: '正芯农牧第四鸡场', status: '正常' },
+  { id: 10, name: '正芯农牧第一水产场', status: '正常' },
+  { id: 11, name: '正芯农牧第二水产场', status: '正常' },
+  { id: 12, name: '正芯农牧第三水产场', status: '报警', alarmCount: 5 },
+]
+
+// 模拟各省份报警数量
+const mockProvinceAlarmCounts: Record<string, number> = {
+  '广东': 10, '江苏': 6, '山东': 5, '河南': 4, '四川': 3,
+  '湖北': 7, '湖南': 5, '浙江': 8, '福建': 4, '安徽': 3,
+  '河北': 2, '辽宁': 3, '黑龙江': 2, '云南': 1, '广西': 4,
 }
 
-const farmTypeNames = {
-  pig: '猪场',
-  chicken: '鸡场',
-  aquatic: '水产'
+// 模拟各城市工厂（部分城市有自定义数据，其余使用默认模板）
+const mockCityFarms: Record<string, CityFarm[]> = {
+  '广州市': [
+    { id: 1, name: '正芯农牧第一猪场', status: '正常' },
+    { id: 2, name: '正芯农牧第二猪场', status: '正常' },
+    { id: 4, name: '正芯农牧第四猪场', status: '报警', alarmCount: 3 },
+    { id: 6, name: '正芯农牧第一鸡场', status: '正常' },
+    { id: 8, name: '正芯农牧第三鸡场', status: '报警', alarmCount: 2 },
+    { id: 10, name: '正芯农牧第一水产场', status: '正常' },
+  ],
+  '深圳市': [
+    { id: 3, name: '正芯农牧第三猪场', status: '正常' },
+    { id: 5, name: '正芯农牧第五猪场', status: '正常' },
+    { id: 12, name: '正芯农牧第三水产场', status: '报警', alarmCount: 5 },
+  ],
+  '南京市': [
+    { id: 1, name: '正芯农牧第一猪场', status: '正常' },
+    { id: 4, name: '正芯农牧第四猪场', status: '报警', alarmCount: 2 },
+    { id: 7, name: '正芯农牧第二鸡场', status: '正常' },
+    { id: 8, name: '正芯农牧第三鸡场', status: '报警', alarmCount: 1 },
+  ],
 }
 
-const showFarmTooltip = (_index: number, event?: MouseEvent) => {
+const getCityFarms = (cityName: string): CityFarm[] => {
+  if (mockCityFarms[cityName]) return mockCityFarms[cityName]
+  return baseFarmTemplates.slice(0, 6 + (cityName.charCodeAt(0) % 4))
+}
+
+const allFarms = [...baseFarmTemplates, ...Object.values(mockCityFarms).flat()]
+
+const alarmMapProvider: AlarmMapProvider = {
+  getProvinceAlarmCount: (provinceName: string) => {
+    if (mockProvinceAlarmCounts[provinceName] !== undefined) {
+      return mockProvinceAlarmCounts[provinceName]
+    }
+    return provinceName.charCodeAt(0) % 8
+  },
+  getCityFarms
+}
+
+// 实时报警列表（mock）
+const alarmList = ref<DashboardAlarm[]>([
+  {
+    id: 1, time: '10:32:15', farmId: 4, farmName: '正芯农牧第四猪场',
+    city: '广州市', province: '广东', barn: '保育舍1',
+    type: '温度异常', description: '温度超过阈值，当前28°C', level: '严重'
+  },
+  {
+    id: 2, time: '10:28:42', farmId: 8, farmName: '正芯农牧第三鸡场',
+    city: '广州市', province: '广东', barn: '蛋鸡舍2',
+    type: '氨气超标', description: '氨气浓度15ppm，超过安全值', level: '严重'
+  },
+  {
+    id: 3, time: '10:15:08', farmId: 12, farmName: '正芯农牧第三水产场',
+    city: '深圳市', province: '广东', barn: '养殖池3',
+    type: '溶氧偏低', description: '溶氧量4.2mg/L，低于标准值', level: '一般'
+  },
+  {
+    id: 4, time: '09:58:33', farmId: 4, farmName: '正芯农牧第四猪场',
+    city: '南京市', province: '江苏', barn: '分娩舍2',
+    type: '湿度异常', description: '湿度过高，当前85%', level: '一般'
+  },
+  {
+    id: 5, time: '09:45:17', farmId: 8, farmName: '正芯农牧第三鸡场',
+    city: '南京市', province: '江苏', barn: '肉鸡舍1',
+    type: '通风故障', description: '通风设备运行异常', level: '严重'
+  },
+  {
+    id: 6, time: '09:30:55', farmId: 12, farmName: '正芯农牧第三水产场',
+    city: '杭州市', province: '浙江', barn: '养殖池1',
+    type: 'pH异常', description: 'pH值8.5，超出正常范围', level: '提示'
+  },
+  {
+    id: 7, time: '09:12:40', farmId: 4, farmName: '正芯农牧第四猪场',
+    city: '武汉市', province: '湖北', barn: '保育舍3',
+    type: '设备离线', description: '温控传感器失去连接', level: '严重'
+  },
+  {
+    id: 8, time: '08:55:22', farmId: 8, farmName: '正芯农牧第三鸡场',
+    city: '苏州市', province: '江苏', barn: '蛋鸡舍1',
+    type: '饮水异常', description: '饮水量低于正常水平', level: '提示'
+  },
+])
+
+const selectedAlarmId = ref<number | null>(null)
+const highlightedFarmId = ref<number | null>(null)
+
+const showFarmTooltip = (index: number, event?: MouseEvent) => {
+  currentTooltipType.value = index
   if (event) {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
     farmTooltipPosition.value = {
@@ -254,21 +382,27 @@ const hideFarmTooltip = () => {
   showFarmIndicatorTooltip.value = false
 }
 
-// 处理厂点击事件
-const handleFarmClick = (farmType: string, cityName: string) => {
-  const farms = mockFarms[farmType as keyof typeof mockFarms] || []
-  subMenuTitle.value = `${cityName} - ${farmTypeNames[farmType as keyof typeof farmTypeNames]}`
-  subMenuFarms.value = farms.map(farm => ({
-    ...farm,
-    name: `${cityName}${farm.name}`  // 添加城市前缀
-  }))
+// 打开城市工厂列表
+const openCityFarmMenu = (cityName: string, farmId?: number) => {
+  subMenuTitle.value = `${cityName} - 工厂列表`
+  subMenuFarms.value = getCityFarms(cityName)
+  highlightedFarmId.value = farmId ?? null
   showSubMenu.value = true
-  
-  // 隐藏 tooltip
+
   if (mapChart) {
-    mapChart.dispatchAction({
-      type: 'hideTip'
-    })
+    mapChart.dispatchAction({ type: 'hideTip' })
+  }
+}
+
+// tooltip / 列表中点击工厂
+const handleFarmClick = (farmId: number) => {
+  const farm = allFarms.find(f => f.id === farmId)
+  if (!farm) return
+  closeSubMenu()
+  router.push({ path: '/farm', query: { farmId: farm.id, farmName: farm.name } })
+
+  if (mapChart) {
+    mapChart.dispatchAction({ type: 'hideTip' })
   }
 }
 
@@ -278,10 +412,40 @@ const closeSubMenu = () => {
 }
 
 // 跳转到厂详情
-const goToFarmDetail = (farm: any) => {
+const goToFarmDetail = (farm: CityFarm) => {
   closeSubMenu()
-  // 跳转到农场详情，并选中对应的工厂
   router.push({ path: '/farm', query: { farmId: farm.id, farmName: farm.name } })
+}
+
+// 地图定位到报警工厂
+const flyToFactory = async (alarm: DashboardAlarm) => {
+  selectedAlarmId.value = alarm.id
+  closeSubMenu()
+
+  if (!mapChart) return
+
+  if (currentMapLevel.value === 'china') {
+    await showProvinceMapAsync(alarm.province)
+  } else if (currentMapLevel.value !== alarm.province) {
+    backToChinaMap()
+    await nextTick()
+    await showProvinceMapAsync(alarm.province)
+  }
+
+  await nextTick()
+  setTimeout(() => {
+    mapChart?.dispatchAction({ type: 'downplay', seriesIndex: 0 })
+    mapChart?.dispatchAction({ type: 'highlight', seriesIndex: 0, name: alarm.city })
+    mapChart?.dispatchAction({ type: 'showTip', seriesIndex: 0, name: alarm.city })
+    openCityFarmMenu(alarm.city, alarm.farmId)
+  }, 350)
+}
+
+const showProvinceMapAsync = (provinceName: string): Promise<void> => {
+  return new Promise(resolve => {
+    showProvinceMap(provinceName)
+    setTimeout(resolve, 300)
+  })
 }
 
 const initMapChart = () => {
@@ -292,17 +456,17 @@ const initMapChart = () => {
   try {
     mapChart = echarts.init(mapChartRef.value)
     
-    // 加载地图数据
-    const option = createChinaMapOption()
+    const option = createChinaMapOption(alarmMapProvider)
     mapChart.setOption(option, true)
 
-    // 地图点击事件 - 下钻到省级
     mapChart.on('click', (params: any) => {
+      const regionName = params.name
+      if (!regionName) return
+
       if (currentMapLevel.value === 'china') {
-        const provinceName = params.name
-        if (provinceName) {
-          showProvinceMap(provinceName)
-        }
+        showProvinceMap(regionName)
+      } else {
+        openCityFarmMenu(regionName)
       }
     })
 
@@ -319,7 +483,7 @@ const initMapChart = () => {
 const showProvinceMap = (provinceName: string) => {
   if (!mapChart) return
   currentMapLevel.value = provinceName
-  const option = createProvinceMapOption(provinceName)
+  const option = createProvinceMapOption(provinceName, alarmMapProvider)
   mapChart.setOption(option, true)
   setTimeout(() => mapChart?.resize(), 0)
 }
@@ -328,7 +492,7 @@ const showProvinceMap = (provinceName: string) => {
 const backToChinaMap = () => {
   if (!mapChart) return
   currentMapLevel.value = 'china'
-  const option = createChinaMapOption()
+  const option = createChinaMapOption(alarmMapProvider)
   mapChart.setOption(option, true)
   setTimeout(() => mapChart?.resize(), 0)
 }
@@ -361,159 +525,6 @@ const cameras = ref([
 
 const isMapLoading = ref(false)
 
-// 生成近30天数据
-const generateLast30Days = () => {
-  const dates: string[] = []
-  const values: number[] = []
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const day = date.getDate().toString().padStart(2, '0')
-    dates.push(`${month}-${day}`)
-    values.push(Math.floor(Math.random() * 30) + 5)
-  }
-  return { dates, values }
-}
-
-const chartDates = ref<string[]>([])
-
-const initAlarmChart = () => {
-  if (!alarmChartRef.value) return
-
-  // 确保容器有尺寸
-  const container = alarmChartRef.value
-
-  // 如果图表已存在，先销毁
-  if (alarmChart) {
-    alarmChart.dispose()
-  }
-
-  alarmChart = echarts.init(container, undefined, {
-    renderer: 'canvas',
-    useDirtyRect: false
-  })
-
-  const { dates, values } = generateLast30Days()
-  chartDates.value = dates
-
-  const option: EChartsOption = {
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(30, 41, 59, 0.9)',
-      borderColor: '#409eff',
-      textStyle: {
-        color: '#fff'
-      },
-      enterable: true
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '5%',
-      top: '10%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: dates,
-      axisLine: {
-        lineStyle: {
-          color: 'rgba(255, 255, 255, 0.3)'
-        }
-      },
-      axisLabel: {
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 10,
-        interval: 4
-      },
-      axisTick: {
-        show: false
-      }
-    },
-    yAxis: {
-      type: 'value',
-      name: '报警数量',
-      nameTextStyle: {
-        color: 'rgba(255, 255, 255, 0.7)'
-      },
-      axisLine: {
-        lineStyle: {
-          color: 'rgba(255, 255, 255, 0.3)'
-        }
-      },
-      axisLabel: {
-        color: 'rgba(255, 255, 255, 0.7)'
-      },
-      splitLine: {
-        lineStyle: {
-          color: 'rgba(255, 255, 255, 0.1)'
-        }
-      }
-    },
-    series: [
-      {
-        name: '报警数量',
-        type: 'line',
-        smooth: true,
-        data: values,
-        symbolSize: 5,
-        symbol: 'circle',
-        showSymbol: false,
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.5)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
-          ])
-        },
-        lineStyle: {
-          color: '#409eff',
-          width: 2
-        },
-        itemStyle: {
-          color: '#409eff',
-          borderColor: '#fff',
-          borderWidth: 1
-        },
-      }
-    ]
-  }
-
-  alarmChart.setOption(option)
-
-  // 只需要一次 resize
-  setTimeout(() => alarmChart?.resize(), 50)
-
-  // 图表点击事件
-  alarmChart.getZr().on('click', (params: any) => {
-    const pointInPixel = [params.offsetX, params.offsetY]
-    if (alarmChart) {
-      const pointInGrid = alarmChart.convertFromPixel('grid', pointInPixel)
-      if (pointInGrid) {
-        const dataIndex = Math.round(pointInGrid[0])
-        if (dataIndex >= 0 && dataIndex < dates.length) {
-          const year = new Date().getFullYear()
-          const dateStr = `${year}-${dates[dataIndex]}`
-          router.push({
-            path: '/farm/alarm-detail',
-            query: { date: dateStr }
-          })
-        }
-      }
-    }
-  })
-
-  alarmChart.on('click', (params: any) => {
-    const year = new Date().getFullYear()
-    const dateStr = `${year}-${params.name}`
-    router.push({
-      path: '/farm/alarm-detail',
-      query: { date: dateStr }
-    })
-  })
-}
-
 const goBack = () => {
   router.push('/farm')
 }
@@ -524,6 +535,10 @@ const goToDeviceDetail = () => {
 
 const goToMonitor = () => {
   router.push('/farm/monitor-detail')
+}
+
+const goToAlarmDetail = () => {
+  router.push('/farm/alarm-detail')
 }
 
 const toggleFullscreen = () => {
@@ -537,7 +552,6 @@ const toggleFullscreen = () => {
 }
 
 const handleResize = () => {
-  alarmChart?.resize()
   mapChart?.resize()
 }
 
@@ -547,27 +561,12 @@ onMounted(() => {
 
   // 优先初始化地图（用户第一眼看到的）
   nextTick(() => {
-    // 使用 requestIdleCallback 来优化渲染性能
     const rIC = (window as any).requestIdleCallback
     if (rIC) {
-      rIC(() => {
-        initMapChart()
-      })
+      rIC(() => initMapChart())
     } else {
       initMapChart()
     }
-    
-    // 延迟初始化报警图表，避免阻塞主线程
-    setTimeout(() => {
-      const rIC2 = (window as any).requestIdleCallback
-      if (rIC2) {
-        rIC2(() => {
-          initAlarmChart()
-        })
-      } else {
-        initAlarmChart()
-      }
-    }, 500)
   })
 
   window.addEventListener('resize', handleResize)
@@ -577,7 +576,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   // 移除全局事件处理函数
   delete (window as any).handleFarmClick
-  alarmChart?.dispose()
   mapChart?.dispose()
 })
 </script>
@@ -714,6 +712,18 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.status-clickable {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.status-clickable:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
 }
 
 .status-label {
@@ -1054,12 +1064,145 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.alarm-chart {
-  width: 100%;
-  flex: 1;
-  min-height: 250px;
-  height: 250px;
-  min-width: 0;
+.alarm-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alarm-total-badge {
+  font-size: 13px;
+  color: #f56c6c;
+  background: rgba(245, 108, 108, 0.15);
+  border: 1px solid rgba(245, 108, 108, 0.4);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.alarm-list-content {
+  overflow-y: auto;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.alarm-list-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+.alarm-list-item {
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: rgba(64, 158, 255, 0.08);
+  border: 1px solid rgba(64, 158, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.alarm-list-item:last-child {
+  margin-bottom: 0;
+}
+
+.alarm-list-item:hover {
+  background: rgba(64, 158, 255, 0.18);
+  border-color: rgba(64, 158, 255, 0.35);
+  transform: translateX(3px);
+}
+
+.alarm-list-item.active {
+  background: rgba(245, 108, 108, 0.12);
+  border-color: rgba(245, 108, 108, 0.5);
+  box-shadow: 0 0 12px rgba(245, 108, 108, 0.2);
+}
+
+.alarm-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.alarm-level {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 4px;
+}
+
+.alarm-level.level-严重 {
+  color: #f56c6c;
+  background: rgba(245, 108, 108, 0.2);
+}
+
+.alarm-level.level-一般 {
+  color: #e6a23c;
+  background: rgba(230, 162, 60, 0.2);
+}
+
+.alarm-level.level-提示 {
+  color: #909399;
+  background: rgba(144, 147, 153, 0.2);
+}
+
+.alarm-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.alarm-farm-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.alarm-location {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 4px;
+}
+
+.alarm-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alarm-fly-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(64, 158, 255, 0.7);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.alarm-list-item:hover .alarm-fly-hint,
+.alarm-list-item.active .alarm-fly-hint {
+  opacity: 1;
+}
+
+.alarm-list-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.alarm-list-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.alarm-list-content::-webkit-scrollbar-thumb {
+  background: rgba(64, 158, 255, 0.25);
+  border-radius: 2px;
 }
 
 .dashboard::-webkit-scrollbar {
@@ -1163,8 +1306,8 @@ onUnmounted(() => {
 }
 
 .sub-menu-item {
-  padding: 14px 16px;
-  margin-bottom: 8px;
+  padding: 10px 16px;
+  margin-bottom: 6px;
   background: rgba(64, 158, 255, 0.1);
   border-radius: 8px;
   cursor: pointer;
@@ -1178,41 +1321,46 @@ onUnmounted(() => {
   transform: translateX(4px);
 }
 
-.farm-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 6px;
+.sub-menu-item.farm-highlighted {
+  background: rgba(245, 108, 108, 0.15);
+  border-color: rgba(245, 108, 108, 0.5);
+  box-shadow: 0 0 10px rgba(245, 108, 108, 0.25);
 }
 
-.farm-info {
+.farm-row {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
-.info-tag {
+.farm-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  flex: 1;
+  min-width: 0;
+}
+
+.farm-status {
   font-size: 12px;
-  padding: 2px 8px;
-  background: rgba(103, 194, 58, 0.2);
-  color: #67c23a;
-  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
-.info-status {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.info-status.status-normal {
-  background: rgba(103, 194, 58, 0.2);
+.farm-status.status-normal {
   color: #67c23a;
 }
 
-.info-status.status-warning {
-  background: rgba(230, 162, 60, 0.2);
-  color: #e6a23c;
+.farm-status.status-alarm {
+  color: #f56c6c;
+}
+
+.sub-menu-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 24px 0;
+  font-size: 14px;
 }
 
 /* 子菜单滚动条样式 */

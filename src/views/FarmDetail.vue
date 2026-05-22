@@ -1,5 +1,5 @@
 <template>
-  <LayoutWithSidebar v-slot="{ currentFactory, selectedFactoryType }">
+  <LayoutWithSidebar>
     <div class="farm-detail-content">
       <div class="content-header">
         <h2>{{ currentFactory || '请选择工厂' }}</h2>
@@ -21,11 +21,11 @@
               <div class="stat-value">85,600</div>
               <div class="stat-label">存塘总量</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item stat-clickable" @click="goToDeviceDetail">
               <div class="stat-value">5</div>
               <div class="stat-label">离线设备</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item stat-clickable" @click="goToAlarmDetail">
               <div class="stat-value">2</div>
               <div class="stat-label">今日告警</div>
             </div>
@@ -39,11 +39,11 @@
               <div class="stat-value">12,850</div>
               <div class="stat-label">存栏总量</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item stat-clickable" @click="goToDeviceDetail">
               <div class="stat-value">5</div>
               <div class="stat-label">离线设备</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item stat-clickable" @click="goToAlarmDetail">
               <div class="stat-value">3</div>
               <div class="stat-label">今日告警</div>
             </div>
@@ -134,11 +134,10 @@ import type { EChartsOption } from 'echarts'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
 
-
 const router = useRouter()
 
-// 使用 useCompanyTree 获取选中的工厂类型
-const { selectedFactoryType: currentFactoryType } = useCompanyTree()
+// 使用 useCompanyTree 获取选中的工厂类型和数据（现在是单例，与 LayoutWithSidebar 共享）
+const { selectedFactoryType, currentFactory } = useCompanyTree()
 
 // 鸡场品种选择
 const chickenType = ref('broiler')
@@ -168,6 +167,14 @@ const goToBarnDetail = (barn: any) => {
   router.push({ path: '/barn-detail', query: { id: barn.id, name: barn.name } })
 }
 
+const goToDeviceDetail = () => {
+  router.push({ path: '/farm/device-detail' })
+}
+
+const goToAlarmDetail = () => {
+  router.push({ path: '/farm/alarm-detail' })
+}
+
 const barnList = ref([
   { id: 1, name: '保育舍1', status: '正常', stock: 1200, temp: 24, humidity: 65, ventilation: 80, oxygen: 85, ph: 7.2 },
   { id: 2, name: '保育舍2', status: '正常', stock: 1150, temp: 25, humidity: 62, ventilation: 75, oxygen: 82, ph: 7.1 },
@@ -184,7 +191,17 @@ const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
 
 const generateChartData = (factoryType: string) => {
-  const dates = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  // 生成近30天的日期
+  const dates = []
+  const today = new Date()
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    dates.push(`${month}-${day}`)
+  }
+  
   let option: EChartsOption = {}
 
   if (factoryType === 'pig') {
@@ -192,13 +209,21 @@ const generateChartData = (factoryType: string) => {
     option = {
       tooltip: { trigger: 'axis' },
       legend: { data: ['水耗', '料耗', '估重'], bottom: 0 },
-      grid: { top: 40, left: '3%', right: '4%', bottom: 60, containLabel: true },
-      xAxis: { type: 'category', boundaryGap: false, data: dates },
+      grid: { top: 40, left: '3%', right: '4%', bottom: 40, containLabel: true },
+      xAxis: { 
+        type: 'category', 
+        boundaryGap: false, 
+        data: dates,
+        axisLabel: {
+          fontSize: 10,
+          rotate: 45
+        }
+      },
       yAxis: { type: 'value' },
       series: [
-        { name: '水耗', type: 'line', smooth: true, data: [120, 132, 101, 134, 90, 230, 210, 182, 191, 234, 290, 330], areaStyle: { opacity: 0.3 } },
-        { name: '料耗', type: 'line', smooth: true, data: [220, 182, 191, 234, 290, 330, 310, 280, 320, 280, 290, 310], areaStyle: { opacity: 0.3 } },
-        { name: '估重', type: 'line', smooth: true, data: [150, 232, 201, 154, 190, 330, 410, 382, 441, 484, 520, 560], areaStyle: { opacity: 0.3 } }
+        { name: '水耗', type: 'line', smooth: true, data: generateRandomData(30, 100, 350), areaStyle: { opacity: 0.3 } },
+        { name: '料耗', type: 'line', smooth: true, data: generateRandomData(30, 200, 350), areaStyle: { opacity: 0.3 } },
+        { name: '估重', type: 'line', smooth: true, data: generateRandomData(30, 150, 600), areaStyle: { opacity: 0.3 } }
       ]
     }
   } else if (factoryType === 'chicken') {
@@ -207,12 +232,20 @@ const generateChartData = (factoryType: string) => {
       option = {
         tooltip: { trigger: 'axis' },
         legend: { data: ['料耗', '增重'], bottom: 0 },
-        grid: { top: 40, left: '3%', right: '4%', bottom: 60, containLabel: true },
-        xAxis: { type: 'category', boundaryGap: false, data: dates },
+        grid: { top: 40, left: '3%', right: '4%', bottom: 40, containLabel: true },
+        xAxis: { 
+          type: 'category', 
+          boundaryGap: false, 
+          data: dates,
+          axisLabel: {
+            fontSize: 10,
+            rotate: 45
+          }
+        },
         yAxis: { type: 'value' },
         series: [
-          { name: '料耗', type: 'line', smooth: true, data: [80, 92, 101, 114, 100, 130, 145, 132, 151, 164, 170, 180], areaStyle: { opacity: 0.3 } },
-          { name: '增重', type: 'line', smooth: true, data: [150, 232, 301, 354, 400, 480, 550, 620, 680, 740, 800, 850], areaStyle: { opacity: 0.3 } }
+          { name: '料耗', type: 'line', smooth: true, data: generateRandomData(30, 70, 200), areaStyle: { opacity: 0.3 } },
+          { name: '增重', type: 'line', smooth: true, data: generateRandomData(30, 150, 900), areaStyle: { opacity: 0.3 } }
         ]
       }
     } else {
@@ -220,12 +253,20 @@ const generateChartData = (factoryType: string) => {
       option = {
         tooltip: { trigger: 'axis' },
         legend: { data: ['料耗', '产蛋量'], bottom: 0 },
-        grid: { top: 40, left: '3%', right: '4%', bottom: 60, containLabel: true },
-        xAxis: { type: 'category', boundaryGap: false, data: dates },
+        grid: { top: 40, left: '3%', right: '4%', bottom: 40, containLabel: true },
+        xAxis: { 
+          type: 'category', 
+          boundaryGap: false, 
+          data: dates,
+          axisLabel: {
+            fontSize: 10,
+            rotate: 45
+          }
+        },
         yAxis: { type: 'value' },
         series: [
-          { name: '料耗', type: 'line', smooth: true, data: [90, 95, 92, 88, 90, 85, 93, 89, 87, 91, 88, 92], areaStyle: { opacity: 0.3 } },
-          { name: '产蛋量', type: 'line', smooth: true, data: [2000, 2200, 2150, 2100, 2250, 2180, 2300, 2220, 2190, 2240, 2200, 2280], areaStyle: { opacity: 0.3 } }
+          { name: '料耗', type: 'line', smooth: true, data: generateRandomData(30, 80, 100), areaStyle: { opacity: 0.3 } },
+          { name: '产蛋量', type: 'line', smooth: true, data: generateRandomData(30, 2000, 2400), areaStyle: { opacity: 0.3 } }
         ]
       }
     }
@@ -234,17 +275,25 @@ const generateChartData = (factoryType: string) => {
     option = {
       tooltip: { trigger: 'axis' },
       legend: { data: ['投饵量', '出苗量', '出苗率', '增重'], bottom: 0 },
-      grid: { top: 40, left: '3%', right: '4%', bottom: 60, containLabel: true },
-      xAxis: { type: 'category', boundaryGap: false, data: dates },
+      grid: { top: 40, left: '3%', right: '4%', bottom: 40, containLabel: true },
+      xAxis: { 
+        type: 'category', 
+        boundaryGap: false, 
+        data: dates,
+        axisLabel: {
+          fontSize: 10,
+          rotate: 45
+        }
+      },
       yAxis: [
         { type: 'value', name: '量' },
         { type: 'value', name: '率(%)', position: 'right', max: 100 }
       ],
       series: [
-        { name: '投饵量', type: 'line', smooth: true, yAxisIndex: 0, data: [150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260], areaStyle: { opacity: 0.3 } },
-        { name: '出苗量', type: 'line', smooth: true, yAxisIndex: 0, data: [50, 55, 60, 70, 80, 95, 110, 125, 135, 145, 155, 170], areaStyle: { opacity: 0.3 } },
-        { name: '出苗率', type: 'line', smooth: true, yAxisIndex: 1, data: [35, 38, 40, 42, 45, 48, 50, 52, 53, 54, 56, 58], areaStyle: { opacity: 0.3 } },
-        { name: '增重', type: 'line', smooth: true, yAxisIndex: 0, data: [100, 150, 220, 300, 380, 460, 520, 600, 680, 750, 820, 900], areaStyle: { opacity: 0.3 } }
+        { name: '投饵量', type: 'line', smooth: true, yAxisIndex: 0, data: generateRandomData(30, 150, 280), areaStyle: { opacity: 0.3 } },
+        { name: '出苗量', type: 'line', smooth: true, yAxisIndex: 0, data: generateRandomData(30, 50, 180), areaStyle: { opacity: 0.3 } },
+        { name: '出苗率', type: 'line', smooth: true, yAxisIndex: 1, data: generateRandomData(30, 35, 60), areaStyle: { opacity: 0.3 } },
+        { name: '增重', type: 'line', smooth: true, yAxisIndex: 0, data: generateRandomData(30, 100, 950), areaStyle: { opacity: 0.3 } }
       ]
     }
   } else {
@@ -252,17 +301,35 @@ const generateChartData = (factoryType: string) => {
     option = {
       tooltip: { trigger: 'axis' },
       legend: { data: ['水耗', '料耗', '估重'], bottom: 0 },
-      grid: { top: 40, left: '3%', right: '4%', bottom: 60, containLabel: true },
-      xAxis: { type: 'category', boundaryGap: false, data: dates },
+      grid: { top: 40, left: '3%', right: '4%', bottom: 40, containLabel: true },
+      xAxis: { 
+        type: 'category', 
+        boundaryGap: false, 
+        data: dates,
+        axisLabel: {
+          fontSize: 10,
+          rotate: 45
+        }
+      },
       yAxis: { type: 'value' },
       series: [
-        { name: '水耗', type: 'line', smooth: true, data: [120, 132, 101, 134, 90, 230, 210, 182, 191, 234, 290, 330], areaStyle: { opacity: 0.3 } },
-        { name: '料耗', type: 'line', smooth: true, data: [220, 182, 191, 234, 290, 330, 310, 280, 320, 280, 290, 310], areaStyle: { opacity: 0.3 } },
-        { name: '估重', type: 'line', smooth: true, data: [150, 232, 201, 154, 190, 330, 410, 382, 441, 484, 520, 560], areaStyle: { opacity: 0.3 } }
+        { name: '水耗', type: 'line', smooth: true, data: generateRandomData(30, 100, 350), areaStyle: { opacity: 0.3 } },
+        { name: '料耗', type: 'line', smooth: true, data: generateRandomData(30, 200, 350), areaStyle: { opacity: 0.3 } },
+        { name: '估重', type: 'line', smooth: true, data: generateRandomData(30, 150, 600), areaStyle: { opacity: 0.3 } }
       ]
     }
   }
   return option
+}
+
+// 生成随机数据的辅助函数
+const generateRandomData = (count: number, min: number, max: number) => {
+  const data = []
+  for (let i = 0; i < count; i++) {
+    const value = Math.floor(Math.random() * (max - min + 1)) + min
+    data.push(value)
+  }
+  return data
 }
 
 const initChart = () => {
@@ -274,13 +341,24 @@ const initChart = () => {
 
 const updateChart = () => {
   if (!chartInstance) return
-  chartInstance.setOption(generateChartData(currentFactoryType.value), true)
+  
+  console.log('updateChart 执行，当前类型:', selectedFactoryType.value)
+  
+  // 先清除图表，确保完全更新
+  chartInstance.clear()
+  
+  // 使用 notMerge: true 强制完全替换配置，而不是合并
+  chartInstance.setOption(generateChartData(selectedFactoryType.value), { 
+    notMerge: true,
+    lazyUpdate: false
+  })
 }
 
 // 监听相关参数变化
-watch([currentFactoryType, chickenType, aquaticType], () => {
+watch([selectedFactoryType, chickenType, aquaticType], (newValues) => {
+  console.log('监听到参数变化，更新图表:', newValues)
   updateChart()
-})
+}, { immediate: false, deep: true })
 
 onMounted(() => {
   setTimeout(initChart, 100)
@@ -377,6 +455,21 @@ onUnmounted(() => {
 .stat-item {
   text-align: center;
   padding: 8px;
+}
+
+.stat-clickable {
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.stat-clickable:hover {
+  background: rgba(24, 144, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.stat-clickable:hover .stat-value {
+  color: #409eff;
 }
 
 .stat-value {

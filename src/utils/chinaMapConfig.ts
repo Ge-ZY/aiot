@@ -7,6 +7,18 @@ import chinaCitiesGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojso
 const getChinaGeoJSON = (): any => chinaGeoJSON
 const getChinaCitiesGeoJSON = (): any => chinaCitiesGeoJSON
 
+export interface CityFarm {
+  id: number
+  name: string
+  status: '正常' | '报警'
+  alarmCount?: number
+}
+
+export interface AlarmMapProvider {
+  getProvinceAlarmCount: (provinceName: string) => number
+  getCityFarms: (cityName: string) => CityFarm[]
+}
+
 // 省份名称映射表（用于匹配 chn-level-1 和 chn-level-2 的名称）
 const provinceNameMap: Record<string, string> = {
   '北京': '北京市',
@@ -56,24 +68,44 @@ const registerMap = (mapName: string, geoJSON: any) => {
   }
 }
 
-// 生成地图数据
-const generateMapData = (geoJSON: any) => {
-  return geoJSON.features.map((item: any) => ({
-    name: item.properties?.name || '',
-    value: Math.floor(Math.random() * 1000) + 100
-  }))
+const menuItemStyle = 'padding: 6px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 4px; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;'
+const menuItemHover = "onmouseover=\"this.style.background='rgba(64, 158, 255, 0.3)'\" onmouseout=\"this.style.background='transparent'\""
+
+const getFarmStatusLabel = (farm: CityFarm) => {
+  const isAlarm = farm.status === '报警'
+  const color = isAlarm ? '#f56c6c' : '#67c23a'
+  const text = isAlarm && farm.alarmCount ? `报警 ${farm.alarmCount}条` : farm.status
+  return `<span style="color: ${color}; font-weight: bold; font-size: 12px; margin-left: 8px; flex-shrink: 0;">${text}</span>`
+}
+
+// 生成地图数据（按报警数量着色）
+const generateMapData = (geoJSON: any, provider: AlarmMapProvider | undefined, isCityLevel: boolean) => {
+  return geoJSON.features.map((item: any) => {
+    const name = item.properties?.name || ''
+    let value = 0
+    if (provider) {
+      value = isCityLevel
+        ? provider.getCityFarms(name)
+            .filter(f => f.status === '报警')
+            .reduce((sum, f) => sum + (f.alarmCount ?? 1), 0)
+        : provider.getProvinceAlarmCount(name)
+    } else {
+      value = Math.floor(Math.random() * 30)
+    }
+    return { name, value }
+  })
 }
 
 // 根据省份名称筛选市级数据
 const getProvinceCitiesGeoJSON = (provinceName: string): any => {
   const citiesGeoJSON = getChinaCitiesGeoJSON()
   const targetProvinceName = provinceNameMap[provinceName] || provinceName
-  
+
   const features = citiesGeoJSON.features.filter((feature: any) => {
     const province = feature.properties?.province
     return province === targetProvinceName
   })
-  
+
   return {
     ...citiesGeoJSON,
     features
@@ -81,8 +113,11 @@ const getProvinceCitiesGeoJSON = (provinceName: string): any => {
 }
 
 // 创建地图配置
-const createMapOption = (mapName: string, geoJSON: any): any => {
+const createMapOption = (mapName: string, geoJSON: any, provider?: AlarmMapProvider): any => {
   registerMap(mapName, geoJSON)
+  const isCityLevel = mapName !== 'china'
+  const mapData = generateMapData(geoJSON, provider, isCityLevel)
+  const maxAlarm = Math.max(...mapData.map(d => d.value), 1)
 
   return {
     tooltip: {
@@ -95,63 +130,57 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
         color: '#fff',
         fontSize: 14
       },
-      enterable: true,  // 允许鼠标进入tooltip
-      hideDelay: 500,  // 延迟500ms隐藏
-      position: (point: [number, number], _params: any, _dom: any, _rect: any, _size: any) => {
-        // tooltip 位置调整，离鼠标更近
-        return {
-          left: point[0] + 10,
-          top: point[1] - 10
-        };
-      },
+      enterable: true,
+      hideDelay: 500,
+      position: (point: [number, number]) => ({
+        left: point[0] + 10,
+        top: point[1] - 10
+      }),
       formatter: (params: any) => {
-        const pigFarm = Math.floor(Math.random() * 11) + 10;  // 10-20
-        const chickenFarm = Math.floor(Math.random() * 11) + 10;  // 10-20
-        const aquatic = Math.floor(Math.random() * 11) + 10;  // 10-20
-        
-        const isProvinceLevel = mapName !== 'china';
-        
-        if (isProvinceLevel) {
-          // 市级地图，显示可点击的菜单
+        const regionName = params.name
+
+        if (isCityLevel && provider) {
+          const farms = provider.getCityFarms(regionName)
+          const farmItems = farms.length > 0
+            ? farms.map(farm => `
+              <div class="menu-item" onclick="window.handleFarmClick(${farm.id})" style="${menuItemStyle}" ${menuItemHover}>
+                <span style="color: #fff;">${farm.name}</span>
+                ${getFarmStatusLabel(farm)}
+              </div>
+            `).join('')
+            : `<div style="color: rgba(255,255,255,0.6); padding: 4px 0;">暂无工厂数据</div>`
+
           return `
             <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #409eff;">
-              ${params.name}
+              ${regionName}
             </div>
-            <div class="farm-menu" style="margin-top: 8px;">
-              <div class="menu-item" onclick="window.handleFarmClick('pig', '${params.name}')" style="padding: 6px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 4px; transition: all 0.2s;" onmouseover="this.style.background='rgba(64, 158, 255, 0.3)'" onmouseout="this.style.background='transparent'">
-                <span style="color: #fff;">猪场：</span>
-                <span style="color: #67c23a; font-weight: bold;">${pigFarm}个</span>
-              </div>
-              <div class="menu-item" onclick="window.handleFarmClick('chicken', '${params.name}')" style="padding: 6px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 4px; transition: all 0.2s;" onmouseover="this.style.background='rgba(64, 158, 255, 0.3)'" onmouseout="this.style.background='transparent'">
-                <span style="color: #fff;">鸡场：</span>
-                <span style="color: #67c23a; font-weight: bold;">${chickenFarm}个</span>
-              </div>
-              <div class="menu-item" onclick="window.handleFarmClick('aquatic', '${params.name}')" style="padding: 6px 12px; cursor: pointer; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='rgba(64, 158, 255, 0.3)'" onmouseout="this.style.background='transparent'">
-                <span style="color: #fff;">水产：</span>
-                <span style="color: #67c23a; font-weight: bold;">${aquatic}个</span>
-              </div>
+            <div style="font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 6px;">工厂列表（点击查看）：</div>
+            <div class="farm-menu" style="margin-top: 4px;">
+              ${farmItems}
             </div>
-          `;
-        } else {
-          // 省级地图，显示普通信息
-          return `
-            <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #409eff;">
-              ${params.name}
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>猪场：</span>
-              <span style="color: #67c23a; font-weight: bold;">${pigFarm}个</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>鸡场：</span>
-              <span style="color: #67c23a; font-weight: bold;">${chickenFarm}个</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span>水产：</span>
-              <span style="color: #67c23a; font-weight: bold;">${aquatic}个</span>
-            </div>
-          `;
+          `
         }
+
+        const alarmCount = provider ? provider.getProvinceAlarmCount(regionName) : 0
+        const alarmColor = alarmCount > 0 ? '#f56c6c' : '#67c23a'
+        return `
+          <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #409eff;">
+            ${regionName}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>报警数量：</span>
+            <span style="color: ${alarmColor}; font-weight: bold; font-size: 18px;">${alarmCount}</span>
+          </div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 6px;">点击进入查看详情</div>
+        `
+      }
+    },
+    visualMap: {
+      show: false,
+      min: 0,
+      max: maxAlarm,
+      inRange: {
+        color: ['rgba(64, 158, 255, 0.15)', 'rgba(245, 108, 108, 0.6)']
       }
     },
     geo: {
@@ -206,7 +235,7 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
     },
     series: [
       {
-        name: '地图数据',
+        name: '报警数据',
         type: 'map',
         map: mapName,
         geoIndex: 0,
@@ -215,7 +244,7 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
           min: 0.5,
           max: 5
         },
-        data: generateMapData(geoJSON),
+        data: mapData,
         emphasis: {
           label: {
             show: true,
@@ -237,15 +266,15 @@ const createMapOption = (mapName: string, geoJSON: any): any => {
 }
 
 // 创建中国地图配置
-const createChinaMapOption = (): any => {
+const createChinaMapOption = (provider?: AlarmMapProvider): any => {
   const geoJSON = getChinaGeoJSON()
-  return createMapOption('china', geoJSON)
+  return createMapOption('china', geoJSON, provider)
 }
 
 // 创建省级地图配置
-const createProvinceMapOption = (provinceName: string): any => {
+const createProvinceMapOption = (provinceName: string, provider?: AlarmMapProvider): any => {
   const provinceGeoJSON = getProvinceCitiesGeoJSON(provinceName)
-  return createMapOption(provinceName, provinceGeoJSON)
+  return createMapOption(provinceName, provinceGeoJSON, provider)
 }
 
 export { createChinaMapOption, createProvinceMapOption }

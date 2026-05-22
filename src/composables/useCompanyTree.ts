@@ -12,6 +12,15 @@ export const factoryTypes: FactoryType[] = [
   { label: '水产', value: 'aquatic' }
 ]
 
+// 单例状态：所有组件共享同一份状态
+const companies = ref<any[]>([])
+const filterText = ref('')
+const companyTree = ref()
+const currentNodeData = ref<any>(null)
+const lastLeafNode = ref<any>(null)
+const currentFactory = ref('')
+const selectedFactoryType = ref<'pig' | 'chicken' | 'aquatic'>('pig')
+
 // 用于标记是否已加载过公司列表
 let hasLoadedCompanies = false
 // 用于防止并发请求
@@ -23,14 +32,6 @@ let loadingPromise: Promise<void> | null = null
 void isLoadingCompanies
 
 export function useCompanyTree() {
-  const companies = ref<any[]>([])
-  const filterText = ref('')
-  const companyTree = ref()
-  const currentNodeData = ref<any>(null)
-  const lastLeafNode = ref<any>(null)
-  const currentFactory = ref('')
-  const selectedFactoryType = ref<'pig' | 'chicken' | 'aquatic'>('pig')
-
   const filterNode = (value: string, data: any) => {
     if (!value) return true
     return data.name.includes(value) || data.code.includes(value)

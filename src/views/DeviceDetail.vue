@@ -30,19 +30,19 @@
             <div class="stat-value">{{ stat.count }}</div>
             <div class="stat-label">{{ stat.name }}</div>
           </div>
-          <!-- 智能花洒额外显示在线/离线数量 - 垂直排列在右侧 -->
-          <div v-if="stat.key === 'shower'" class="stat-sub-info-vertical" @click.stop>
+          <!-- 所有设备显示在线/离线数量 - 垂直排列在右侧 -->
+          <div class="stat-sub-info-vertical" @click.stop>
             <div 
               class="stat-sub-item on"
-              :class="{ active: activeSubStat === 'on' }"
-              @click="handleSubStatClick('on')"
+              :class="{ active: activeStat === stat.key && activeSubStat === 'on' }"
+              @click="handleSubStatClick(stat.key, 'on')"
             >
               在线: {{ stat.onLine }}
             </div>
             <div 
               class="stat-sub-item off"
-              :class="{ active: activeSubStat === 'off' }"
-              @click="handleSubStatClick('off')"
+              :class="{ active: activeStat === stat.key && activeSubStat === 'off' }"
+              @click="handleSubStatClick(stat.key, 'off')"
             >
               离线: {{ stat.offLine }}
             </div>
@@ -324,11 +324,6 @@ const statKeyToTypeMap: Record<string, string> = {
   gateway: '智能网关'
 }
 
-// 智能花洒设备的在线/离线状态（模拟数据）
-const showerDeviceStatus: Record<number, string> = {
-  3: 'on'
-}
-
 // 所有设备的状态（模拟数据）
 const allDeviceStatus: Record<number, string> = {
   1: 'on',
@@ -377,39 +372,28 @@ const getDeviceStatus = (row: any) => {
 }
 
 const handleStatClick = (key: string) => {
-  if (key === 'shower') {
-    // 智能花洒的点击逻辑
-    if (activeStat.value === 'shower') {
-      // 已经激活智能花洒，取消激活
-      activeStat.value = ''
+  if (activeStat.value === key) {
+    if (activeSubStat.value) {
       activeSubStat.value = ''
     } else {
-      // 激活智能花洒
-      activeStat.value = 'shower'
+      activeStat.value = ''
     }
   } else {
-    // 其他卡片的点击逻辑
-    if (activeStat.value === key) {
-      activeStat.value = ''
-    } else {
-      activeStat.value = key
-    }
+    activeStat.value = key
     activeSubStat.value = ''
   }
 }
 
-const handleSubStatClick = (subKey: string) => {
-  // 确保智能花洒已激活
-  if (activeStat.value !== 'shower') {
-    activeStat.value = 'shower'
-  }
-  
-  if (activeSubStat.value === subKey) {
-    // 再次点击，取消子状态高亮，保持智能花洒高亮
-    activeSubStat.value = ''
-  } else {
-    // 激活子状态
+const handleSubStatClick = (statKey: string, subKey: string) => {
+  if (activeStat.value !== statKey) {
+    activeStat.value = statKey
     activeSubStat.value = subKey
+  } else {
+    if (activeSubStat.value === subKey) {
+      activeSubStat.value = ''
+    } else {
+      activeSubStat.value = subKey
+    }
   }
 }
 
@@ -427,10 +411,10 @@ const filteredDeviceList = computed(() => {
     const type = statKeyToTypeMap[activeStat.value]
     result = result.filter(item => item.type === type)
     
-    // 如果是智能花洒且有子状态激活，再根据在线/离线过滤
-    if (activeStat.value === 'shower' && activeSubStat.value) {
+    // 如果有子状态激活，根据在线/离线过滤
+    if (activeSubStat.value) {
       result = result.filter(item => {
-        const status = showerDeviceStatus[item.id]
+        const status = allDeviceStatus[item.id]
         if (activeSubStat.value === 'on') {
           return status === 'on'
         } else {
@@ -463,15 +447,10 @@ const workshopDeviceStats = computed(() => {
   return deviceStats.value.map(stat => {
     const type = statKeyToTypeMap[stat.key]
     const count = filteredDevices.filter(item => item.type === type).length
-    let onLineCount = 0
-    let offLineCount = 0
-    
-    if (stat.key === 'shower') {
-      onLineCount = filteredDevices.filter(item => 
-        item.type === type && showerDeviceStatus[item.id] === 'on'
-      ).length
-      offLineCount = count - onLineCount
-    }
+    const onLineCount = filteredDevices.filter(item => 
+      item.type === type && allDeviceStatus[item.id] === 'on'
+    ).length
+    const offLineCount = count - onLineCount
     
     return {
       ...stat,

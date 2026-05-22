@@ -1,229 +1,212 @@
 <template>
-  <div class="barn-detail" :class="{ fullscreen: isFullscreen }">
-    <div class="barn-detail-header">
+  <div class="barn-detail">
+    <div class="page-header">
       <div class="header-left">
-        <el-button type="primary" :icon="ArrowLeft" @click="goBack">返回</el-button>
-      </div>
-      <div class="header-center">
-        <h1>{{ barnName }} - 详情监控</h1>
+        <el-button class="back-btn" @click="goBack" :icon="ArrowLeft" circle />
+        <h2>{{ barnName }}</h2>
       </div>
       <div class="header-right">
-        <el-select v-model="selectedBarn" placeholder="请选择栏舍" @change="handleBarnChange" style="width: 200px; margin-right: 10px;">
-          <el-option
-            v-for="barn in barnList"
-            :key="barn.id"
-            :label="barn.name"
-            :value="barn.id"
-          />
+        <el-select v-model="selectedBarn" @change="handleBarnChange" style="width: 150px;">
+          <el-option v-for="barn in barnList" :key="barn.id" :label="barn.name" :value="barn.id" />
         </el-select>
-        <el-button type="primary" :icon="FullScreen" @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏'
-        }}</el-button>
       </div>
     </div>
 
-    <div class="barn-detail-content">
-      <div class="top-section">
-        <div class="panel video-panel">
-          <div class="panel-header">
-            <div class="panel-header-content">
-              <h3>视频监控</h3>
-              <el-select v-model="selectedCamera" placeholder="选择摄像头" size="small" style="width: 150px;">
-                <el-option
-                  v-for="camera in cameraList"
-                  :key="camera.id"
-                  :label="camera.name"
-                  :value="camera.id"
-                />
-              </el-select>
-            </div>
-          </div>
-          <div class="video-container">
-            <div class="video-placeholder">
-              <el-button class="switch-btn switch-btn-left" circle @click="handlePrevCamera">
-                <el-icon><ArrowLeft /></el-icon>
-              </el-button>
-              <div class="video-content">
-                <el-icon class="video-icon"><VideoCamera /></el-icon>
-                <p>{{ currentCameraName }}监控画面</p>
-              </div>
-              <el-button class="switch-btn switch-btn-right" circle @click="handleNextCamera">
-                <el-icon><ArrowRight /></el-icon>
-              </el-button>
-            </div>
+    <div class="detail-content">
+      <!-- 视频监控 -->
+      <div class="panel video-panel">
+        <div class="panel-header">
+          <h3>视频监控</h3>
+          <div class="panel-actions">
+            <el-select v-model="selectedCamera" placeholder="选择监控" style="width: 150px; margin-right: 10px;">
+              <el-option v-for="camera in cameraList" :key="camera.id" :label="camera.name" :value="camera.id" />
+            </el-select>
           </div>
         </div>
-
-        <div class="panel chart-panel">
-          <div class="panel-header">
-            <h3>环境趋势</h3>
+        <div class="video-container">
+          <div class="video-placeholder">
+            <el-icon class="video-icon">
+              <VideoCamera />
+            </el-icon>
+            <p>{{ currentCameraName }} 监控画面</p>
           </div>
-          <div ref="chartRef" class="chart-container"></div>
+          
+          <el-button class="switch-btn switch-btn-left" circle @click="handlePrevCamera">
+            <el-icon>
+              <ArrowLeft />
+            </el-icon>
+          </el-button>
+          <el-button class="switch-btn switch-btn-right" circle @click="handleNextCamera">
+            <el-icon>
+              <ArrowRight />
+            </el-icon>
+          </el-button>
         </div>
       </div>
 
-      <div class="bottom-section">
-        <div class="panel indicators-panel">
-          <div class="panel-header">
-            <h3>环境指标</h3>
+      <!-- 环境趋势 -->
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3>环境趋势</h3>
+        </div>
+        <div ref="chartRef" class="chart-container"></div>
+      </div>
+    </div>
+
+    <div class="bottom-section">
+      <!-- 环境指标 -->
+      <div class="panel indicators-panel">
+        <div class="panel-header">
+          <h3>环境指标</h3>
+        </div>
+        <div class="indicators-grid">
+          <div class="indicator-item">
+            <div class="indicator-label">平均温度</div>
+            <div class="indicator-value" style="color: #409eff;">24.5°C</div>
           </div>
-          <div class="indicators-grid">
-            <div class="indicator-item">
-              <div class="indicator-label">平均温度</div>
-              <div class="indicator-value" style="color: #409eff;">24.5°C</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">温度一</div>
-              <div class="indicator-value" style="color: #67c23a;">24.2°C</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">温度二</div>
-              <div class="indicator-value" style="color: #e6a23c;">24.8°C</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">CO₂浓度</div>
-              <div class="indicator-value" style="color: #f56c6c;">1250 ppm</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">舍外温度</div>
-              <div class="indicator-value" style="color: #909399;">18°C</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">饮水量</div>
-              <div class="indicator-value" style="color: #409eff;">1560 L</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">相对湿度</div>
-              <div class="indicator-value" style="color: #67c23a;">65%</div>
-            </div>
-            <div class="indicator-item">
-              <div class="indicator-label">光照强度</div>
-              <div class="indicator-value" style="color: #e6a23c;">450 Lux</div>
-            </div>
+          <div class="indicator-item">
+            <div class="indicator-label">温度一</div>
+            <div class="indicator-value" style="color: #67c23a;">24.2°C</div>
+          </div>
+          <div class="indicator-item">
+            <div class="indicator-label">温度二</div>
+            <div class="indicator-value" style="color: #e6a23c;">24.8°C</div>
+          </div>
+          <div class="indicator-item">
+            <div class="indicator-label">CO₂浓度</div>
+            <div class="indicator-value" style="color: #f56c6c;">1250 ppm</div>
+          </div>
+          <div class="indicator-item">
+            <div class="indicator-label">舍外温度</div>
+            <div class="indicator-value" style="color: #909399;">18°C</div>
+          </div>
+          <div class="indicator-item">
+            <div class="indicator-label">饮水量</div>
+            <div class="indicator-value" style="color: #409eff;">1560 L</div>
+          </div>
+          <div class="indicator-item">
+            <div class="indicator-label">相对湿度</div>
+            <div class="indicator-value" style="color: #67c23a;">65%</div>
+          </div>
+          <div class="indicator-item">
+            <div class="indicator-label">光照强度</div>
+            <div class="indicator-value" style="color: #e6a23c;">450 Lux</div>
           </div>
         </div>
+      </div>
 
-        <div class="panel devices-panel">
-          <div class="panel-header">
-            <h3>舍内设备</h3>
+      <!-- 舍内设备 -->
+      <div class="panel devices-panel">
+        <div class="panel-header">
+          <h3>舍内设备</h3>
+        </div>
+        <div class="devices-grid">
+          <div class="device-item">
+            <div class="device-header">
+              <div class="device-name">24变频风机</div>
+              <div class="device-controls">
+                <el-switch v-model="devices.fan24.on" active-color="#67c23a" />
+                <div class="device-status" :class="{ on: devices.fan24.on }">
+                  {{ devices.fan24.on ? '运行中' : '已关闭' }}
+                </div>
+              </div>
+            </div>
+            <div class="device-details" v-if="devices.fan24.on">
+              <div class="detail-item">
+                <span class="detail-label">运行时长</span>
+                <span class="detail-value">{{ devices.fan24.runtime }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">通风模式</span>
+                <span class="detail-value">{{ getModeText(devices.fan24.mode) }}</span>
+              </div>
+            </div>
           </div>
-          <div class="devices-grid">
-            <div class="device-item">
-              <div class="device-header">
-                <div class="device-name">24变频风机</div>
-                <div class="device-controls">
-                  <el-switch v-model="devices.fan24.on" active-color="#67c23a" />
-                  <div class="device-status" :class="{ on: devices.fan24.on }">{{ devices.fan24.on ? '运行中' : '已关闭' }}</div>
-                </div>
-              </div>
-              <div class="device-details" v-if="devices.fan24.on">
-                <div class="detail-item">
-                  <span class="detail-label">运行时长</span>
-                  <span class="detail-value">{{ devices.fan24.runtime }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">通风模式</span>
-                  <el-select v-model="devices.fan24.mode" size="small" style="width: 90px;">
-                    <el-option label="最小" value="min" />
-                    <el-option label="常规" value="normal" />
-                    <el-option label="最大" value="max" />
-                    <el-option label="紧急" value="emergency" />
-                  </el-select>
+
+          <div class="device-item">
+            <div class="device-header">
+              <div class="device-name">吊顶小窗</div>
+              <div class="device-controls">
+                <el-switch v-model="devices.ceilingWindow.on" active-color="#67c23a" />
+                <div class="device-status" :class="{ on: devices.ceilingWindow.on }">
+                  {{ devices.ceilingWindow.on ? '已打开' : '已关闭' }}
                 </div>
               </div>
             </div>
-            <div class="device-item">
-              <div class="device-header">
-                <div class="device-name">吊顶小窗</div>
-                <div class="device-controls">
-                  <el-switch v-model="devices.ceilingWindow.on" active-color="#67c23a" />
-                  <div class="device-status" :class="{ on: devices.ceilingWindow.on }">{{ devices.ceilingWindow.on ? '已打开' : '已关闭' }}</div>
-                </div>
+            <div class="device-details" v-if="devices.ceilingWindow.on">
+              <div class="detail-item">
+                <span class="detail-label">开度</span>
+                <span class="detail-value">{{ getModeText(devices.ceilingWindow.opening) }}</span>
               </div>
-              <div class="device-details" v-if="devices.ceilingWindow.on">
-                <div class="detail-item">
-                  <span class="detail-label">开度</span>
-                  <el-select v-model="devices.ceilingWindow.opening" size="small" style="width: 90px;">
-                    <el-option label="全开" value="full" />
-                    <el-option label="全关" value="close" />
-                    <el-option label="半开" value="half" />
-                    <el-option label="正在动作" value="moving" />
-                  </el-select>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">模式</span>
-                  <el-select v-model="devices.ceilingWindow.mode" size="small" style="width: 90px;">
-                    <el-option label="手动" value="manual" />
-                    <el-option label="自动" value="auto" />
-                    <el-option label="定时" value="timer" />
-                  </el-select>
+              <div class="detail-item">
+                <span class="detail-label">模式</span>
+                <span class="detail-value">{{ getModeText(devices.ceilingWindow.mode) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="device-item">
+            <div class="device-header">
+              <div class="device-name">36风机</div>
+              <div class="device-controls">
+                <el-switch v-model="devices.fan36.on" active-color="#67c23a" />
+                <div class="device-status" :class="{ on: devices.fan36.on }">
+                  {{ devices.fan36.on ? '运行中' : '已关闭' }}
                 </div>
               </div>
             </div>
-            <div class="device-item">
-              <div class="device-header">
-                <div class="device-name">36风机</div>
-                <div class="device-controls">
-                  <el-switch v-model="devices.fan36.on" active-color="#67c23a" />
-                  <div class="device-status" :class="{ on: devices.fan36.on }">{{ devices.fan36.on ? '运行中' : '已关闭' }}</div>
-                </div>
+            <div class="device-details" v-if="devices.fan36.on">
+              <div class="detail-item">
+                <span class="detail-label">运行时长</span>
+                <span class="detail-value">{{ devices.fan36.runtime }}</span>
               </div>
-              <div class="device-details" v-if="devices.fan36.on">
-                <div class="detail-item">
-                  <span class="detail-label">运行时长</span>
-                  <span class="detail-value">{{ devices.fan36.runtime }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">通风模式</span>
-                  <el-select v-model="devices.fan36.mode" size="small" style="width: 90px;">
-                    <el-option label="最小" value="min" />
-                    <el-option label="常规" value="normal" />
-                    <el-option label="最大" value="max" />
-                    <el-option label="紧急" value="emergency" />
-                  </el-select>
+              <div class="detail-item">
+                <span class="detail-label">通风模式</span>
+                <span class="detail-value">{{ getModeText(devices.fan36.mode) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="device-item">
+            <div class="device-header">
+              <div class="device-name">50风机</div>
+              <div class="device-controls">
+                <el-switch v-model="devices.fan50.on" active-color="#67c23a" />
+                <div class="device-status" :class="{ on: devices.fan50.on }">
+                  {{ devices.fan50.on ? '运行中' : '已关闭' }}
                 </div>
               </div>
             </div>
-            <div class="device-item">
-              <div class="device-header">
-                <div class="device-name">50风机</div>
-                <div class="device-controls">
-                  <el-switch v-model="devices.fan50.on" active-color="#67c23a" />
-                  <div class="device-status" :class="{ on: devices.fan50.on }">{{ devices.fan50.on ? '运行中' : '已关闭' }}</div>
-                </div>
+            <div class="device-details" v-if="devices.fan50.on">
+              <div class="detail-item">
+                <span class="detail-label">运行时长</span>
+                <span class="detail-value">{{ devices.fan50.runtime }}</span>
               </div>
-              <div class="device-details" v-if="devices.fan50.on">
-                <div class="detail-item">
-                  <span class="detail-label">运行时长</span>
-                  <span class="detail-value">{{ devices.fan50.runtime }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">通风模式</span>
-                  <el-select v-model="devices.fan50.mode" size="small" style="width: 90px;">
-                    <el-option label="最小" value="min" />
-                    <el-option label="常规" value="normal" />
-                    <el-option label="最大" value="max" />
-                    <el-option label="紧急" value="emergency" />
-                  </el-select>
+              <div class="detail-item">
+                <span class="detail-label">通风模式</span>
+                <span class="detail-value">{{ getModeText(devices.fan50.mode) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="device-item">
+            <div class="device-header">
+              <div class="device-name">水帘</div>
+              <div class="device-controls">
+                <el-switch v-model="devices.waterCurtain.on" active-color="#67c23a" />
+                <div class="device-status" :class="{ on: devices.waterCurtain.on }">
+                  {{ devices.waterCurtain.on ? '运行中' : '已关闭' }}
                 </div>
               </div>
             </div>
-            <div class="device-item">
-              <div class="device-header">
-                <div class="device-name">水帘</div>
-                <div class="device-controls">
-                  <el-switch v-model="devices.waterCurtain.on" active-color="#67c23a" />
-                  <div class="device-status" :class="{ on: devices.waterCurtain.on }">{{ devices.waterCurtain.on ? '运行中' : '已关闭' }}</div>
-                </div>
+            <div class="device-details" v-if="devices.waterCurtain.on">
+              <div class="detail-item">
+                <span class="detail-label">运行时长</span>
+                <span class="detail-value">{{ devices.waterCurtain.runtime }}</span>
               </div>
-              <div class="device-details" v-if="devices.waterCurtain.on">
-                <div class="detail-item">
-                  <span class="detail-label">运行时长</span>
-                  <span class="detail-value">{{ devices.waterCurtain.runtime }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">水池水位</span>
-                  <span class="detail-value">{{ devices.waterCurtain.waterLevel }}%</span>
-                </div>
+              <div class="detail-item">
+                <span class="detail-label">水池水位</span>
+                <span class="detail-value">{{ devices.waterCurtain.waterLevel }}%</span>
               </div>
             </div>
           </div>
@@ -235,16 +218,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { VideoCamera, ArrowLeft, ArrowRight, FullScreen } from '@element-plus/icons-vue'
+import { useRouter, useRoute } from 'vue-router'
+import { VideoCamera, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
-const isFullscreen = ref(false)
 
 const barnList = ref([
   { id: 1, name: '保育舍1' },
@@ -254,28 +236,11 @@ const barnList = ref([
 ])
 
 const selectedBarn = ref<number>(1)
+
 const barnName = computed(() => {
   const barn = barnList.value.find(b => b.id === selectedBarn.value)
   return barn ? barn.name : '保育舍'
 })
-
-const goBack = () => {
-  router.push('/farm')
-}
-
-const toggleFullscreen = () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(err => {
-      console.log(err)
-    })
-    isFullscreen.value = true
-  } else {
-    document.exitFullscreen().catch(err => {
-      console.log(err)
-    })
-    isFullscreen.value = false
-  }
-}
 
 // 摄像头相关
 const selectedCamera = ref<number>(1)
@@ -287,14 +252,16 @@ const cameraList = ref([
   { id: 5, name: '办公区域' },
   { id: 6, name: '围墙周界' }
 ])
+
 const currentCameraName = computed(() => {
   const camera = cameraList.value.find(c => c.id === selectedCamera.value)
-  return camera ? camera.name : '舍内'
+  return camera ? camera.name : '请选择监控'
 })
 
 const handlePrevCamera = () => {
   const currentIndex = cameraList.value.findIndex(c => c.id === selectedCamera.value)
   if (currentIndex === 0) {
+    // 第一个的上一个是最后一个
     selectedCamera.value = cameraList.value[cameraList.value.length - 1].id
   } else {
     selectedCamera.value = cameraList.value[currentIndex - 1].id
@@ -304,12 +271,18 @@ const handlePrevCamera = () => {
 const handleNextCamera = () => {
   const currentIndex = cameraList.value.findIndex(c => c.id === selectedCamera.value)
   if (currentIndex === cameraList.value.length - 1) {
+    // 最后一个的下一个是第一个
     selectedCamera.value = cameraList.value[0].id
   } else {
     selectedCamera.value = cameraList.value[currentIndex + 1].id
   }
 }
 
+const goBack = () => {
+  router.push('/farm')
+}
+
+// 设备数据
 const devices = ref({
   fan24: {
     on: true,
@@ -344,7 +317,25 @@ const generateRuntime = () => {
   return `${hours}小时${minutes}分`
 }
 
+const getModeText = (mode: string) => {
+  const modeMap: Record<string, string> = {
+    min: '最小',
+    normal: '常规',
+    max: '最大',
+    emergency: '紧急',
+    manual: '手动',
+    auto: '自动',
+    timer: '定时',
+    full: '全开',
+    close: '全关',
+    half: '半开',
+    moving: '正在动作'
+  }
+  return modeMap[mode] || mode
+}
+
 const handleBarnChange = () => {
+  // 切换栏舍时重新生成数据
   if (chartInstance) {
     const dates = generateDateData()
     const { avgTemp, heatTemp, coolTemp, targetTemp } = generateTempData()
@@ -356,6 +347,8 @@ const handleBarnChange = () => {
     option.series[3].data = targetTemp
     chartInstance.setOption(option)
   }
+  
+  // 随机更新设备状态
   const modes = ['min', 'normal', 'max', 'emergency']
   const openings = ['full', 'close', 'half', 'moving']
   const windowModes = ['manual', 'auto', 'timer']
@@ -398,6 +391,7 @@ const initSelectedBarn = () => {
       return
     }
   }
+  // 如果没有找到，默认选中第一个
   selectedBarn.value = barnList.value[0].id
 }
 
@@ -419,7 +413,7 @@ const generateTempData = () => {
   const heatTemp = []
   const coolTemp = []
   const targetTemp = []
-  
+
   for (let i = 0; i < 30; i++) {
     const baseTemp = 24 + Math.sin(i / 5) * 1
     avgTemp.push((baseTemp + (Math.random() - 0.5) * 2).toFixed(1))
@@ -433,7 +427,8 @@ const generateTempData = () => {
 
 const initChart = () => {
   if (!chartRef.value) return
-  
+
+  // 确保容器有尺寸
   const container = chartRef.value
   if (container.offsetWidth === 0 || container.offsetHeight === 0) {
     setTimeout(() => initChart(), 50)
@@ -574,10 +569,6 @@ const handleResize = () => {
   chartInstance?.resize()
 }
 
-const handleFullscreenChange = () => {
-  isFullscreen.value = !!document.fullscreenElement
-}
-
 onMounted(() => {
   nextTick(() => {
     setTimeout(() => {
@@ -585,13 +576,12 @@ onMounted(() => {
       initChart()
     }, 100)
   })
+  
   window.addEventListener('resize', handleResize)
-  document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   chartInstance?.dispose()
 })
 </script>
@@ -602,75 +592,61 @@ onUnmounted(() => {
   height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   color: white;
+  padding: 20px;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
 }
 
-.barn-detail.fullscreen {
-  height: 100vh;
-  width: 100vw;
-}
-
-.barn-detail-header {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 30px;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(64, 158, 255, 0.3);
-  flex-shrink: 0;
+  margin-bottom: 20px;
 }
 
-.header-left,
-.header-right {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
 }
 
-.header-center h1 {
+.back-btn {
+  background: rgba(64, 158, 255, 0.2);
+  border-color: rgba(64, 158, 255, 0.5);
+  color: #409eff;
+}
+
+.back-btn:hover {
+  background: rgba(64, 158, 255, 0.4);
+  border-color: #409eff;
+}
+
+.page-header h2 {
   margin: 0;
   font-size: 24px;
-  background: linear-gradient(90deg, #409eff, #67c23a);
+  font-weight: 600;
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.barn-detail-content {
-  flex: 1;
+.detail-content {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 20px 30px;
-  overflow-y: auto;
-}
-
-.top-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  flex: 0 0 auto;
-  min-height: 300px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .bottom-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  flex: 0 0 auto;
-  min-height: 300px;
+  display: flex;
+  gap: 20px;
 }
 
 .panel {
-  background: rgba(30, 41, 59, 0.8);
-  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.6);
   border: 1px solid rgba(64, 158, 255, 0.2);
-  padding: 15px;
-  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -678,15 +654,12 @@ onUnmounted(() => {
 }
 
 .panel-header {
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(64, 158, 255, 0.3);
-}
-
-.panel-header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(64, 158, 255, 0.3);
 }
 
 .panel-header h3 {
@@ -696,25 +669,33 @@ onUnmounted(() => {
   color: #409eff;
 }
 
-.video-container {
-  flex: 1;
+.panel-actions {
   display: flex;
   align-items: center;
 }
 
-.video-placeholder {
+.video-panel {
   flex: 1;
+}
+
+.video-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
+  min-height: 280px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.video-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.6);
-  min-height: 300px;
-  padding: 20px;
-  box-sizing: border-box;
-  position: relative;
 }
 
 .switch-btn {
@@ -723,7 +704,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(64, 158, 255, 0.2);
+  background: rgba(15, 23, 42, 0.8);
   border: 1px solid rgba(64, 158, 255, 0.4);
   color: #409eff;
   transition: all 0.3s ease;
@@ -733,7 +714,7 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.video-placeholder:hover .switch-btn {
+.video-container:hover .switch-btn {
   opacity: 1;
 }
 
@@ -743,11 +724,11 @@ onUnmounted(() => {
 }
 
 .switch-btn-left {
-  left: 10px;
+  left: 15px;
 }
 
 .switch-btn-right {
-  right: 10px;
+  right: 15px;
 }
 
 .video-icon {
@@ -756,12 +737,20 @@ onUnmounted(() => {
   color: #409eff;
 }
 
+.chart-panel {
+  flex: 1;
+}
+
 .chart-container {
   flex: 1;
   width: 100%;
-  min-height: 250px;
-  height: 100%;
+  min-height: 280px;
   min-width: 0;
+}
+
+.indicators-panel,
+.devices-panel {
+  flex: 1;
 }
 
 .indicators-grid {
@@ -805,7 +794,7 @@ onUnmounted(() => {
 .device-item {
   background: rgba(103, 194, 58, 0.1);
   border: 1px solid rgba(103, 194, 58, 0.3);
-  padding: 10px;
+  padding: 15px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -826,7 +815,7 @@ onUnmounted(() => {
 }
 
 .device-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: white;
 }
@@ -850,11 +839,11 @@ onUnmounted(() => {
 
 .device-details {
   width: 100%;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid rgba(103, 194, 58, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .detail-item {
@@ -865,12 +854,12 @@ onUnmounted(() => {
 }
 
 .detail-label {
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
 }
 
 .detail-value {
-  font-size: 11px;
+  font-size: 12px;
   color: #67c23a;
   font-weight: 500;
 }
