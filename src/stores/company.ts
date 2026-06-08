@@ -4,13 +4,14 @@ import { sdk } from '@/utils/sdk'
 
 export interface FactoryType {
   label: string
-  value: 'pig' | 'chicken' | 'aquatic'
+  value: 'pig' | 'chicken' | 'aquatic' | 'feed'
 }
 
 export const factoryTypes: FactoryType[] = [
   { label: '猪场', value: 'pig' },
   { label: '鸡场', value: 'chicken' },
-  { label: '水产', value: 'aquatic' }
+  { label: '水产', value: 'aquatic' },
+  { label: '饲料厂', value: 'feed' }
 ]
 
 export const useCompanyStore = defineStore('company', () => {

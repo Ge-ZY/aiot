@@ -8,11 +8,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Dashboard.vue')
   },
   {
-    path: '/barn-detail',
-    name: 'BarnDetail',
-    component: () => import('../views/BarnDetail.vue')
-  },
-  {
     path: '/farm',
     component: MainLayout,
     children: [
@@ -20,6 +15,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '',
         name: 'FarmDetail',
         component: () => import('../views/FarmDetail.vue')
+      },
+      {
+        path: 'barn-detail',
+        name: 'BarnDetail',
+        component: () => import('../views/BarnDetail.vue'),
+        meta: { hidden: true }
       },
       {
         path: 'alarm-detail',
@@ -35,6 +36,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'monitor-detail',
         name: 'MonitorDetail',
         component: () => import('../views/MonitorDetail.vue')
+      },
+      {
+        path: 'comparison-detail',
+        name: 'ComparisonDetail',
+        component: () => import('../views/ComparisonDetail.vue')
       }
     ]
   }

@@ -29,6 +29,10 @@
           <el-icon><Camera /></el-icon>
           <span>监控点位</span>
         </el-menu-item>
+        <el-menu-item index="/farm/comparison-detail">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>数据对比</span>
+        </el-menu-item>
       </el-menu>
     </div>
     <div class="layout-content">
@@ -44,11 +48,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, Monitor, Warning, Setting, Camera } from '@element-plus/icons-vue'
+import { House, Monitor, Warning, Setting, Camera, DataAnalysis } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => {
+  if (route.meta.hidden || route.path.startsWith('/farm/barn-detail')) {
+    return '/farm'
+  }
+  return route.path
+})
 
 const handleMenuSelect = (index: string) => {
   if (index === route.path) return
@@ -115,7 +124,9 @@ const handleMenuSelect = (index: string) => {
 
 .layout-content {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #f0f2f5;
   position: relative;
 }

@@ -317,8 +317,7 @@ onUnmounted(() => {
 
 <style scoped>
 .alarm-content {
-  height: 100%;
-  overflow-y: auto;
+  padding-bottom: 24px;
 }
 
 .content-header {
@@ -348,8 +347,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .panel-header {
@@ -402,13 +399,10 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 0;
 }
 
 .chart-container {
-  flex: 1;
-  min-height: 200px;
-  height: 100%;
+  min-height: 280px;
   width: 100%;
   min-width: 0;
 }
@@ -416,13 +410,10 @@ onUnmounted(() => {
 .list-panel {
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 
 .table-container {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
+  width: 100%;
 }
 
 .description-cell {

@@ -106,9 +106,8 @@ onUnmounted(() => {
 .monitor-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background: #f0f2f5;
+  padding-bottom: 24px;
+  height: calc(100vh - 64px);
 }
 
 .camera-header {
@@ -125,12 +124,12 @@ onUnmounted(() => {
 }
 
 .camera-panel {
-  flex: 1;
   background: #000;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
-  min-height: 0;
+  flex: 1;
+  min-height: 400px;
 }
 
 .video-wrapper {

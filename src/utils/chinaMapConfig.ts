@@ -4,8 +4,8 @@ import * as echarts from 'echarts'
 import chinaGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-1.json'
 import chinaCitiesGeoJSON from 'chinese-global-compliant-geodata/dist/src/geojson/countries/as/chn/global/chn-level-2.json'
 
-const getChinaGeoJSON = (): any => chinaGeoJSON
-const getChinaCitiesGeoJSON = (): any => chinaCitiesGeoJSON
+const getChinaGeoJSON = (): any => sanitizeGeoJSON(chinaGeoJSON)
+const getChinaCitiesGeoJSON = (): any => sanitizeGeoJSON(chinaCitiesGeoJSON)
 
 export interface CityFarm {
   id: number
@@ -17,6 +17,26 @@ export interface CityFarm {
 export interface AlarmMapProvider {
   getProvinceAlarmCount: (provinceName: string) => number
   getCityFarms: (cityName: string) => CityFarm[]
+}
+
+interface MapDataItem {
+  name: string
+  value: number
+}
+
+const BOUNDARY_LINE_NAME = '境界线'
+
+/** 过滤 GeoJSON 中的境界线要素，避免地图上重复出现「境界线」字样 */
+const sanitizeGeoJSON = (geoJSON: any) => ({
+  ...geoJSON,
+  features: geoJSON.features.filter(
+    (feature: any) => feature.properties?.name !== BOUNDARY_LINE_NAME
+  ),
+})
+
+const formatRegionLabel = (name?: string) => {
+  if (!name || name === BOUNDARY_LINE_NAME) return ''
+  return name
 }
 
 // 省份名称映射表（用于匹配 chn-level-1 和 chn-level-2 的名称）
@@ -79,9 +99,10 @@ const getFarmStatusLabel = (farm: CityFarm) => {
 }
 
 // 生成地图数据（按报警数量着色）
-const generateMapData = (geoJSON: any, provider: AlarmMapProvider | undefined, isCityLevel: boolean) => {
+const generateMapData = (geoJSON: any, provider: AlarmMapProvider | undefined, isCityLevel: boolean): MapDataItem[] => {
   return geoJSON.features.map((item: any) => {
     const name = item.properties?.name || ''
+    if (name === BOUNDARY_LINE_NAME) return null
     let value = 0
     if (provider) {
       value = isCityLevel
@@ -93,7 +114,7 @@ const generateMapData = (geoJSON: any, provider: AlarmMapProvider | undefined, i
       value = Math.floor(Math.random() * 30)
     }
     return { name, value }
-  })
+  }).filter((item: MapDataItem | null): item is MapDataItem => item !== null)
 }
 
 // 根据省份名称筛选市级数据
@@ -102,6 +123,8 @@ const getProvinceCitiesGeoJSON = (provinceName: string): any => {
   const targetProvinceName = provinceNameMap[provinceName] || provinceName
 
   const features = citiesGeoJSON.features.filter((feature: any) => {
+    const name = feature.properties?.name
+    if (name === BOUNDARY_LINE_NAME) return false
     const province = feature.properties?.province
     return province === targetProvinceName
   })
@@ -117,7 +140,7 @@ const createMapOption = (mapName: string, geoJSON: any, provider?: AlarmMapProvi
   registerMap(mapName, geoJSON)
   const isCityLevel = mapName !== 'china'
   const mapData = generateMapData(geoJSON, provider, isCityLevel)
-  const maxAlarm = Math.max(...mapData.map(d => d.value), 1)
+  const maxAlarm = Math.max(...mapData.map((d: MapDataItem) => d.value), 1)
 
   return {
     tooltip: {
@@ -186,24 +209,26 @@ const createMapOption = (mapName: string, geoJSON: any, provider?: AlarmMapProvi
     geo: {
       map: mapName,
       roam: true,
-      zoom: 1.2,
+      zoom: 0.95,
       scaleLimit: {
         min: 0.5,
         max: 5
       },
       layoutCenter: ['50%', '50%'],
-      layoutSize: '85%',
+      layoutSize: '86%',
       label: {
         show: true,
         color: '#fff',
-        fontSize: 10
+        fontSize: 10,
+        formatter: (params: { name?: string }) => formatRegionLabel(params.name),
       },
       emphasis: {
         label: {
           show: true,
           color: '#fff',
           fontSize: 12,
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          formatter: (params: { name?: string }) => formatRegionLabel(params.name),
         },
         itemStyle: {
           areaColor: 'rgba(64, 158, 255, 0.7)',
@@ -245,12 +270,16 @@ const createMapOption = (mapName: string, geoJSON: any, provider?: AlarmMapProvi
           max: 5
         },
         data: mapData,
+        label: {
+          show: false,
+        },
         emphasis: {
           label: {
             show: true,
             color: '#fff',
             fontSize: 12,
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            formatter: (params: { name?: string }) => formatRegionLabel(params.name),
           },
           itemStyle: {
             areaColor: 'rgba(64, 158, 255, 0.7)',

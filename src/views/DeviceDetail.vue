@@ -628,10 +628,7 @@ const updateDetailChart = () => {
 
 <style scoped>
 .device-content {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding-bottom: 24px;
 }
 
 .content-header {
@@ -785,17 +782,12 @@ const updateDetailChart = () => {
 }
 
 .list-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .table-container {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
+  width: 100%;
 }
 
 /* 弹窗样式 */

@@ -3,13 +3,14 @@ import { sdk } from '@/utils/sdk'
 
 export interface FactoryType {
   label: string
-  value: 'pig' | 'chicken' | 'aquatic'
+  value: 'pig' | 'chicken' | 'aquatic' | 'feed'
 }
 
 export const factoryTypes: FactoryType[] = [
   { label: '猪场', value: 'pig' },
   { label: '鸡场', value: 'chicken' },
-  { label: '水产', value: 'aquatic' }
+  { label: '水产', value: 'aquatic' },
+  { label: '饲料厂', value: 'feed' }
 ]
 
 // 单例状态：所有组件共享同一份状态
@@ -19,7 +20,7 @@ const companyTree = ref()
 const currentNodeData = ref<any>(null)
 const lastLeafNode = ref<any>(null)
 const currentFactory = ref('')
-const selectedFactoryType = ref<'pig' | 'chicken' | 'aquatic'>('pig')
+const selectedFactoryType = ref<'pig' | 'chicken' | 'aquatic' | 'feed'>('pig')
 
 // 用于标记是否已加载过公司列表
 let hasLoadedCompanies = false

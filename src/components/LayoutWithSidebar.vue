@@ -67,14 +67,18 @@ defineExpose({
 <style scoped>
 .layout-with-sidebar {
   display: flex;
-  height: 100%;
   width: 100%;
+  min-height: 100%;
+  align-items: flex-start;
 }
 
 .sidebar {
   width: 300px;
   flex-shrink: 0;
-  overflow: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
   border-right: 1px solid #e6e6e6;
 }
 
@@ -98,8 +102,6 @@ defineExpose({
 .main-content {
   flex: 1;
   padding: 20px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
 }
 </style>
