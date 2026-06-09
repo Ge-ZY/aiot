@@ -49,6 +49,42 @@
 
       <!-- 已选工厂：详情内容 -->
       <template v-else>
+        <!-- 今日生产看板 -->
+        <div class="panel today-briefing">
+          <div class="panel-header-row">
+            <div class="panel-title">今日生产看板</div>
+            <span class="panel-meta">{{ todayDate }} · 晨会数据</span>
+          </div>
+          <div class="briefing-grid">
+            <div v-for="item in todayBriefingItems" :key="item.key" class="briefing-card" :class="item.cardClass">
+              <div class="briefing-value" :class="item.valueClass">{{ item.value }}</div>
+              <div class="briefing-label">{{ item.label }}</div>
+              <div v-if="item.change" class="briefing-change" :class="item.changeClass">{{ item.change }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 环境达标摘要 -->
+        <div class="env-summary-row">
+          <div class="env-summary-card">
+            <span class="env-summary-label">全厂环境达标率</span>
+            <span class="env-summary-value">{{ envCompliance.overallRate }}%</span>
+            <el-progress :percentage="envCompliance.overallRate" :stroke-width="6" :show-text="false" />
+          </div>
+          <div class="env-summary-card">
+            <span class="env-summary-label">异常栏舍</span>
+            <span class="env-summary-value warn">{{ envCompliance.abnormalBarnCount }} 个</span>
+          </div>
+          <div class="env-summary-card">
+            <span class="env-summary-label">最差舍 / 偏离时长</span>
+            <span class="env-summary-value">{{ envCompliance.worstBarn }} · {{ envCompliance.worstDuration }}</span>
+          </div>
+          <div class="env-summary-card">
+            <span class="env-summary-label">未处理报警</span>
+            <span class="env-summary-value alarm">{{ unprocessedAlarmCount }} 条</span>
+          </div>
+        </div>
+
         <!-- KPI 条 -->
         <div class="kpi-row">
           <div
@@ -101,10 +137,16 @@
               >
                 <div class="alarm-item-top">
                   <span class="alarm-level" :class="`level-${alarm.level}`">{{ alarm.level }}</span>
+                  <el-tag :type="alarmHandleTagType(alarm.handleStatus)" size="small">{{ alarm.handleStatus }}</el-tag>
                   <span class="alarm-time">{{ alarm.time }}</span>
                 </div>
                 <div class="alarm-barn">{{ displayBarnName(alarm.barnName) }}</div>
                 <div class="alarm-desc">{{ alarm.type }}：{{ alarm.description }}</div>
+                <div class="alarm-workflow">
+                  <span>负责人：{{ alarm.assignee }}</span>
+                  <span v-if="alarm.duration !== '—'">持续 {{ alarm.duration }}</span>
+                  <span v-if="alarm.respondedAt">响应 {{ alarm.respondedAt }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -119,7 +161,13 @@
         <div class="panel order-section">
           <div class="panel-header-row">
             <div class="panel-title">订单详情</div>
-            <span v-if="overdueOrderCount > 0" class="order-overdue-badge">{{ overdueOrderCount }} 笔逾期</span>
+            <div class="order-summary-tags">
+              <span class="order-stat-tag">今日待交 {{ orderFulfillment.todayDue }} 笔</span>
+              <span class="order-stat-tag success">已完成 {{ orderFulfillment.todayCompleted }} 笔</span>
+              <span class="order-stat-tag">本周履约率 {{ orderFulfillment.weekRate }}%</span>
+              <span class="order-stat-tag">本月履约率 {{ orderFulfillment.monthRate }}%</span>
+              <span v-if="overdueOrderCount > 0" class="order-overdue-badge">{{ overdueOrderCount }} 笔逾期</span>
+            </div>
           </div>
           <el-table
             :data="factoryOrders"
@@ -224,6 +272,12 @@ import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import CameraPanel from '@/components/CameraPanel.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
 import { factoryCameras } from '@/utils/cameraMockData'
+import {
+  getTodayProduction,
+  getEnvCompliance,
+  getOrderFulfillment,
+  type AlarmHandleStatus,
+} from '@/utils/farmOperationsMock'
 
 interface BarnItem {
   id: number
@@ -261,6 +315,10 @@ interface FactoryAlarm {
   level: '严重' | '一般' | '提示'
   time: string
   processed: boolean
+  assignee: string
+  handleStatus: AlarmHandleStatus
+  duration: string
+  respondedAt?: string
 }
 
 interface FactoryOrder {
@@ -358,18 +416,23 @@ const barnDataByType: Record<string, BarnItem[]> = {
 
 const alarmDataByType: Record<string, FactoryAlarm[]> = {
   pig: [
-    { id: 1, barnId: 4, barnName: '保育舍4', type: '温度异常', description: '温度超过阈值，当前27°C', level: '严重', time: '10:32', processed: false },
-    { id: 2, barnId: 4, barnName: '保育舍4', type: '通风不足', description: '通风量低于标准值', level: '一般', time: '10:15', processed: false },
-    { id: 3, barnId: 6, barnName: '分娩舍2', type: '湿度异常', description: '湿度过高，当前75%', level: '严重', time: '09:48', processed: false },
+    { id: 1, barnId: 4, barnName: '保育舍4', type: '温度异常', description: '温度超过阈值，当前27°C', level: '严重', time: '10:32', processed: false, assignee: '张工', handleStatus: '待处理', duration: '2小时15分' },
+    { id: 2, barnId: 4, barnName: '保育舍4', type: '通风不足', description: '通风量低于标准值', level: '一般', time: '10:15', processed: false, assignee: '李主管', handleStatus: '处理中', duration: '45分', respondedAt: '10:05' },
+    { id: 3, barnId: 6, barnName: '分娩舍2', type: '湿度异常', description: '湿度过高，当前75%', level: '严重', time: '09:48', processed: false, assignee: '王巡检', handleStatus: '待处理', duration: '1小时30分' },
   ],
   chicken: [
-    { id: 11, barnId: 102, barnName: '蛋鸡舍2', type: '氨气超标', description: '氨气浓度超标', level: '严重', time: '10:20', processed: false },
-    { id: 12, barnId: 102, barnName: '蛋鸡舍2', type: '温度异常', description: '温度26°C超限', level: '一般', time: '09:55', processed: false },
-    { id: 13, barnId: 104, barnName: '肉鸡舍2', type: '通风故障', description: '风机运行异常', level: '严重', time: '09:30', processed: false },
+    { id: 11, barnId: 102, barnName: '蛋鸡舍2', type: '氨气超标', description: '氨气浓度超标', level: '严重', time: '10:20', processed: false, assignee: '张工', handleStatus: '待处理', duration: '2小时05分' },
+    { id: 12, barnId: 102, barnName: '蛋鸡舍2', type: '温度异常', description: '温度26°C超限', level: '一般', time: '09:55', processed: false, assignee: '李主管', handleStatus: '处理中', duration: '30分', respondedAt: '09:50' },
+    { id: 13, barnId: 104, barnName: '肉鸡舍2', type: '通风故障', description: '风机运行异常', level: '严重', time: '09:30', processed: false, assignee: '赵技术员', handleStatus: '待处理', duration: '3小时10分' },
   ],
   aquatic: [
-    { id: 21, barnId: 203, barnName: '养殖池3', type: '溶氧偏低', description: '溶氧量4.2mg/L', level: '严重', time: '10:10', processed: false },
-    { id: 22, barnId: 203, barnName: '养殖池3', type: 'pH异常', description: 'pH值8.5超出范围', level: '一般', time: '09:40', processed: false },
+    { id: 21, barnId: 203, barnName: '养殖池3', type: '溶氧偏低', description: '溶氧量4.2mg/L', level: '严重', time: '10:10', processed: false, assignee: '周工', handleStatus: '待处理', duration: '1小时50分' },
+    { id: 22, barnId: 203, barnName: '养殖池3', type: 'pH异常', description: 'pH值8.5超出范围', level: '一般', time: '09:40', processed: false, assignee: '吴主管', handleStatus: '处理中', duration: '20分', respondedAt: '09:35' },
+  ],
+  feed: [
+    { id: 31, barnId: 301, barnName: '制粒车间1', type: '温度异常', description: '制粒机出口温度超限', level: '严重', time: '10:25', processed: false, assignee: '陈工', handleStatus: '待处理', duration: '1小时40分' },
+    { id: 32, barnId: 302, barnName: '混合车间2', type: '粉尘超标', description: '车间粉尘浓度偏高', level: '一般', time: '09:50', processed: false, assignee: '刘主管', handleStatus: '处理中', duration: '35分', respondedAt: '09:42' },
+    { id: 33, barnId: 303, barnName: '成品仓', type: '湿度异常', description: '成品仓湿度超过标准', level: '提示', time: '08:30', processed: true, assignee: '系统自动', handleStatus: '已关闭', duration: '—' },
   ],
 }
 
@@ -390,6 +453,11 @@ const orderDataByType: Record<string, FactoryOrder[]> = {
     { id: '22', orderNo: 'PO-202505-022', orderTime: '2025-05-13 09:40', deliveryTime: '2025-05-21 08:00', overdueTime: null, overdueDays: 0, contactName: '吴采购', contactPhone: '131-0013-1009', status: '即将到期' },
     { id: '23', orderNo: 'PO-202504-015', orderTime: '2025-04-18 11:30', deliveryTime: '2025-05-10 17:00', overdueTime: '2025-05-10 17:00', overdueDays: 11, contactName: '郑主任', contactPhone: '130-0013-0010', status: '已逾期' },
   ],
+  feed: [
+    { id: '31', orderNo: 'SO-202505-031', orderTime: '2025-05-06 10:00', deliveryTime: '2025-05-21 14:00', overdueTime: null, overdueDays: 0, contactName: '饲料销售部', contactPhone: '138-0013-8031', status: '即将到期' },
+    { id: '32', orderNo: 'SO-202505-032', orderTime: '2025-05-10 16:30', deliveryTime: '2025-05-28 09:00', overdueTime: null, overdueDays: 0, contactName: '华东经销', contactPhone: '139-0013-9032', status: '正常' },
+    { id: '33', orderNo: 'SO-202504-028', orderTime: '2025-04-22 11:15', deliveryTime: '2025-05-15 17:00', overdueTime: '2025-05-15 17:00', overdueDays: 6, contactName: '华南客户', contactPhone: '137-0013-7033', status: '已逾期' },
+  ],
 }
 
 const barnList = computed(() => barnDataByType[selectedFactoryType.value] ?? [])
@@ -397,6 +465,51 @@ const factoryAlarms = computed(() => alarmDataByType[selectedFactoryType.value] 
 const factoryOrders = computed(() => orderDataByType[selectedFactoryType.value] ?? [])
 const overdueOrderCount = computed(() => factoryOrders.value.filter(o => o.status === '已逾期').length)
 const factoryCameraList = factoryCameras
+
+const todayDate = new Date().toLocaleDateString('zh-CN')
+const todayProduction = computed(() => getTodayProduction(selectedFactoryType.value))
+const envCompliance = computed(() => {
+  const abnormal = barnList.value.filter(b => b.status === '告警')
+  return getEnvCompliance(abnormal.length, abnormal.map(b => displayBarnName(b.name)))
+})
+const unprocessedAlarmCount = computed(() =>
+  factoryAlarms.value.filter(a => a.handleStatus !== '已关闭').length
+)
+const orderFulfillment = computed(() => getOrderFulfillment(factoryOrders.value))
+
+const todayBriefingItems = computed(() => {
+  const t = todayProduction.value
+  const kpi = factoryKpi.value
+  const type = selectedFactoryType.value
+  const deadChangeStr = t.dailyDeadChange >= 0 ? `较昨日 +${t.dailyDeadChange}` : `较昨日 ${t.dailyDeadChange}`
+  const feedChangeStr = t.feedChange >= 0 ? `较昨日 +${t.feedChange}%` : `较昨日 ${t.feedChange}%`
+
+  if (type === 'feed') {
+    return [
+      { key: 'output', label: '今日产量(吨)', value: t.actualOutput, change: `计划 ${t.planOutput}`, cardClass: 'primary', valueClass: '', changeClass: '' },
+      { key: 'ship', label: '今日出货(吨)', value: kpi.totalFeedShipment, change: null, cardClass: '', valueClass: '', changeClass: '' },
+      { key: 'alarm', label: '未处理报警', value: unprocessedAlarmCount.value, change: null, cardClass: 'warn', valueClass: 'alarm', changeClass: '' },
+      { key: 'abnormal', label: '异常车间', value: kpi.abnormalBarn, change: null, cardClass: '', valueClass: 'warn', changeClass: '' },
+      { key: 'water', label: '今日用水(m³)', value: t.waterConsumption, change: `较昨日 ${t.waterChange}%`, cardClass: '', valueClass: '', changeClass: '' },
+      { key: 'offline', label: '离线设备', value: kpi.offline, change: null, cardClass: '', valueClass: 'offline', changeClass: '' },
+    ]
+  }
+
+  return [
+    { key: 'dead', label: '今日死淘', value: kpi.dailyDead, change: deadChangeStr, cardClass: kpi.dailyDead > 20 ? 'warn' : '', valueClass: 'dead', changeClass: t.dailyDeadChange > 0 ? 'up' : 'down' },
+    { key: 'feed', label: '今日料耗(kg)', value: t.feedConsumption, change: feedChangeStr, cardClass: 'primary', valueClass: '', changeClass: t.feedChange > 5 ? 'up' : 'down' },
+    { key: 'water', label: '今日用水(m³)', value: t.waterConsumption, change: `较昨日 ${t.waterChange}%`, cardClass: '', valueClass: '', changeClass: '' },
+    { key: 'abnormal', label: '异常栏舍', value: kpi.abnormalBarn, change: envCompliance.value.worstBarn !== '—' ? `最差 ${envCompliance.value.worstDuration}` : null, cardClass: '', valueClass: 'warn', changeClass: '' },
+    { key: 'alarm', label: '未处理报警', value: unprocessedAlarmCount.value, change: null, cardClass: 'warn', valueClass: 'alarm', changeClass: '' },
+    { key: 'batch', label: '在养批次 / 日龄', value: `${t.batchCount}批 · ${t.avgAge}天`, change: type === 'chicken' ? `产蛋 ${t.actualOutput.toLocaleString()}枚` : null, cardClass: '', valueClass: '', changeClass: '' },
+  ]
+})
+
+const alarmHandleTagType = (status: AlarmHandleStatus) => {
+  if (status === '已关闭') return 'success'
+  if (status === '处理中') return 'warning'
+  return 'danger'
+}
 
 const factoryKpi = computed(() => {
   const barns = barnList.value
@@ -801,6 +914,122 @@ onUnmounted(() => {
   color: #909399;
 }
 
+/* 今日生产看板 */
+.today-briefing {
+  margin-bottom: 16px;
+}
+
+.briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.briefing-card {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.briefing-card.primary {
+  background: #ecf5ff;
+  border-color: #d9ecff;
+}
+
+.briefing-card.warn {
+  background: #fef0f0;
+  border-color: #fde2e2;
+}
+
+.briefing-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.briefing-value.alarm { color: #f56c6c; }
+.briefing-value.warn { color: #e6a23c; }
+.briefing-value.dead { color: #fa541c; }
+.briefing-value.offline { color: #909399; }
+
+.briefing-label {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 6px;
+}
+
+.briefing-change {
+  font-size: 11px;
+  margin-top: 4px;
+  color: #909399;
+}
+
+.briefing-change.up { color: #f56c6c; }
+.briefing-change.down { color: #67c23a; }
+
+.env-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.env-summary-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.env-summary-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.env-summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.env-summary-value.warn { color: #e6a23c; }
+.env-summary-value.alarm { color: #f56c6c; }
+
+.alarm-workflow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #909399;
+}
+
+.order-summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.order-stat-tag {
+  font-size: 12px;
+  color: #606266;
+  background: #f5f7fa;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.order-stat-tag.success {
+  color: #67c23a;
+  background: #f0f9eb;
+}
+
 /* KPI */
 .kpi-row {
   display: grid;
@@ -945,8 +1174,9 @@ onUnmounted(() => {
 
 .alarm-item-top {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .alarm-level {

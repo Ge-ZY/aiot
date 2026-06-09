@@ -78,11 +78,16 @@
                 :class="{ active: selectedAlarmId === alarm.id }" @click="flyToFactory(alarm)">
                 <div class="alarm-item-top">
                   <span class="alarm-level" :class="`level-${alarm.level}`">{{ alarm.level }}</span>
+                  <span class="alarm-handle-tag" :class="`status-${alarm.handleStatus}`">{{ alarm.handleStatus }}</span>
                   <span class="alarm-time">{{ alarm.time }}</span>
                 </div>
                 <div class="alarm-farm-name">{{ alarm.farmName }}</div>
                 <div class="alarm-location">{{ alarm.province }} · {{ alarm.city }}</div>
                 <div class="alarm-desc">{{ alarm.type }}：{{ alarm.description }}</div>
+                <div class="alarm-workflow-row">
+                  <span>{{ alarm.assignee }}</span>
+                  <span v-if="alarm.duration !== '—'">持续 {{ alarm.duration }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -164,6 +169,9 @@ interface DashboardAlarm {
   level: '严重' | '一般' | '提示'
   processed: boolean
   isTodayNew: boolean
+  assignee: string
+  handleStatus: '待处理' | '处理中' | '已关闭'
+  duration: string
 }
 
 type KpiFilter = 'total' | 'severe' | 'farm' | 'todayNew' | 'unprocessed'
@@ -250,49 +258,49 @@ const alarmList = ref<DashboardAlarm[]>([
     id: 1, time: '10:32:15', farmId: 4, farmName: '正芯农牧第四猪场',
     city: '广州市', province: '广东', barn: '保育舍1',
     type: '温度异常', description: '温度超过阈值，当前28°C', level: '严重',
-    processed: false, isTodayNew: true
+    processed: false, isTodayNew: true, assignee: '张工', handleStatus: '待处理', duration: '2小时15分'
   },
   {
     id: 2, time: '10:28:42', farmId: 8, farmName: '正芯农牧第三鸡场',
     city: '广州市', province: '广东', barn: '蛋鸡舍2',
     type: '氨气超标', description: '氨气浓度15ppm，超过安全值', level: '严重',
-    processed: false, isTodayNew: true
+    processed: false, isTodayNew: true, assignee: '李主管', handleStatus: '处理中', duration: '45分'
   },
   {
     id: 3, time: '10:15:08', farmId: 12, farmName: '正芯农牧第三水产场',
     city: '深圳市', province: '广东', barn: '养殖池3',
     type: '溶氧偏低', description: '溶氧量4.2mg/L，低于标准值', level: '一般',
-    processed: false, isTodayNew: true
+    processed: false, isTodayNew: true, assignee: '王巡检', handleStatus: '待处理', duration: '1小时30分'
   },
   {
     id: 4, time: '09:58:33', farmId: 4, farmName: '正芯农牧第四猪场',
     city: '南京市', province: '江苏', barn: '分娩舍2',
     type: '湿度异常', description: '湿度过高，当前85%', level: '一般',
-    processed: false, isTodayNew: true
+    processed: false, isTodayNew: true, assignee: '赵技术员', handleStatus: '待处理', duration: '55分'
   },
   {
     id: 5, time: '09:45:17', farmId: 8, farmName: '正芯农牧第三鸡场',
     city: '南京市', province: '江苏', barn: '肉鸡舍1',
     type: '通风故障', description: '通风设备运行异常', level: '严重',
-    processed: false, isTodayNew: true
+    processed: false, isTodayNew: true, assignee: '张工', handleStatus: '待处理', duration: '3小时05分'
   },
   {
     id: 6, time: '09:30:55', farmId: 12, farmName: '正芯农牧第三水产场',
     city: '杭州市', province: '浙江', barn: '养殖池1',
     type: 'pH异常', description: 'pH值8.5，超出正常范围', level: '提示',
-    processed: true, isTodayNew: false
+    processed: true, isTodayNew: false, assignee: '系统自动', handleStatus: '已关闭', duration: '—'
   },
   {
     id: 7, time: '09:12:40', farmId: 4, farmName: '正芯农牧第四猪场',
     city: '武汉市', province: '湖北', barn: '保育舍3',
     type: '设备离线', description: '温控传感器失去连接', level: '严重',
-    processed: false, isTodayNew: false
+    processed: false, isTodayNew: false, assignee: '李主管', handleStatus: '处理中', duration: '20分'
   },
   {
     id: 8, time: '08:55:22', farmId: 8, farmName: '正芯农牧第三鸡场',
     city: '苏州市', province: '江苏', barn: '蛋鸡舍1',
     type: '饮水异常', description: '饮水量低于正常水平', level: '提示',
-    processed: false, isTodayNew: false
+    processed: false, isTodayNew: false, assignee: '王巡检', handleStatus: '待处理', duration: '4小时10分'
   },
 ])
 
@@ -861,13 +869,6 @@ onUnmounted(() => {
   }
 }
 
-.alarm-item-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 3px;
-}
-
 .alarm-level {
   font-size: 10px;
   font-weight: 600;
@@ -914,6 +915,33 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.alarm-handle-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.alarm-handle-tag.status-待处理 { color: #f56c6c; background: rgba(245, 108, 108, 0.2); }
+.alarm-handle-tag.status-处理中 { color: #e6a23c; background: rgba(230, 162, 60, 0.2); }
+.alarm-handle-tag.status-已关闭 { color: #67c23a; background: rgba(103, 194, 58, 0.2); }
+
+.alarm-workflow-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.alarm-item-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .alarm-list-content::-webkit-scrollbar {

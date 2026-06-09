@@ -23,6 +23,50 @@
         </div>
       </div>
 
+      <!-- 本厂区域对标 -->
+      <div class="panel benchmark-panel">
+        <div class="panel-header">
+          <h3>本厂区域对标</h3>
+          <span class="panel-sub">{{ factoryBenchmark.region }} · 共 {{ factoryBenchmark.stockTotal }} 家工厂</span>
+        </div>
+        <div class="benchmark-grid">
+          <div class="benchmark-card">
+            <div class="benchmark-rank">第 <strong>{{ factoryBenchmark.stockRank }}</strong> 名</div>
+            <div class="benchmark-label">存栏规模</div>
+          </div>
+          <div class="benchmark-card">
+            <div class="benchmark-rank alarm">第 <strong>{{ factoryBenchmark.alarmRank }}</strong> 名</div>
+            <div class="benchmark-label">报警数量（越少越好）</div>
+          </div>
+          <div class="benchmark-card">
+            <div class="benchmark-rank success">第 <strong>{{ factoryBenchmark.onlineRank }}</strong> 名</div>
+            <div class="benchmark-label">设备在线率</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 成本指标 -->
+      <div class="panel cost-panel">
+        <div class="panel-header">
+          <h3>成本指标</h3>
+          <span class="panel-sub">单头/单羽/单尾成本（{{ costMetrics.unitLabel }}）</span>
+        </div>
+        <div class="cost-grid">
+          <div class="cost-card">
+            <div class="cost-value">{{ costMetrics.feedCostPerUnit }}</div>
+            <div class="cost-label">饲料成本</div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-value">{{ costMetrics.waterCostPerUnit }}</div>
+            <div class="cost-label">用水成本</div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-value">{{ costMetrics.medicineCostPerUnit || '—' }}</div>
+            <div class="cost-label">用药成本</div>
+          </div>
+        </div>
+      </div>
+
       <!-- 区域工厂数 + 存栏 TOP5 -->
       <div class="section-row">
         <div class="panel chart-panel">
@@ -151,6 +195,7 @@ import {
   formatStock,
   regionOrder,
 } from '@/utils/comparisonMockData'
+import { getFactoryBenchmark, getCostMetrics } from '@/utils/farmOperationsMock'
 
 const { selectedFactoryType, factoryTypes } = useCompanyTree()
 
@@ -168,6 +213,8 @@ const regionStats = computed(() => getRegionStats(provinceStats.value))
 const topStockProvinces = computed(() => getTopProvincesByStock(provinceStats.value))
 const topAlarmProvinces = computed(() => getTopProvincesByAlarm(provinceStats.value))
 const typeTotals = computed(() => getFactoryTypeTotals(provinceStats.value))
+const factoryBenchmark = computed(() => getFactoryBenchmark())
+const costMetrics = computed(() => getCostMetrics(selectedFactoryType.value))
 
 const totalStock = computed(() => provinceStats.value.reduce((s, p) => s + p.stock, 0))
 const totalFarms = computed(() => provinceStats.value.reduce((s, p) => s + p.farmCount, 0))
@@ -388,6 +435,53 @@ onUnmounted(() => {
   font-size: 12px;
   color: #909399;
   margin-top: 6px;
+}
+
+.benchmark-panel,
+.cost-panel {
+  margin-bottom: 16px;
+}
+
+.benchmark-grid,
+.cost-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.benchmark-card,
+.cost-card {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.benchmark-rank {
+  font-size: 14px;
+  color: #409eff;
+  margin-bottom: 6px;
+}
+
+.benchmark-rank strong {
+  font-size: 28px;
+}
+
+.benchmark-rank.alarm { color: #f56c6c; }
+.benchmark-rank.success { color: #67c23a; }
+
+.benchmark-label,
+.cost-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.cost-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 6px;
 }
 
 .section-row {
