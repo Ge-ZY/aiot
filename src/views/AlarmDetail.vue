@@ -92,6 +92,7 @@ import * as echarts from 'echarts'
 import * as XLSX from 'xlsx'
 import type { EChartsOption } from 'echarts'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
+import { useChartResize } from '@/composables/useChartResize'
 
 interface AlarmItem {
   id: number
@@ -198,6 +199,11 @@ const generateLast30Days = () => {
   return { dates, values }
 }
 
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [chart],
+  () => [chartRef.value]
+)
+
 const initChart = () => {
   if (!chartRef.value) return
   
@@ -208,6 +214,7 @@ const initChart = () => {
     return
   }
   
+  chart?.dispose()
   chart = echarts.init(container)
   const { dates, values } = generateLast30Days()
   
@@ -266,7 +273,8 @@ const initChart = () => {
   }
   
   chart.setOption(option)
-  chart.resize()
+  observeContainers()
+  resizeCharts()
 }
 
 const refreshData = () => {
@@ -296,21 +304,15 @@ const exportExcel = () => {
   }
 }
 
-const handleResize = () => {
-  chart?.resize()
-}
-
 onMounted(() => {
   nextTick(() => {
     setTimeout(() => {
       initChart()
     }, 100)
   })
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
   chart?.dispose()
 })
 </script>

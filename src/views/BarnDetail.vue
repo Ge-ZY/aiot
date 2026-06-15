@@ -499,9 +499,18 @@
             <el-table-column prop="deviceType" label="类型" width="90" />
             <el-table-column prop="paramName" label="参数" width="100" />
             <el-table-column prop="paramValue" label="当前值" width="120" />
-            <el-table-column prop="runStatus" label="运行状态" width="90">
+            <el-table-column prop="runStatus" label="开关状态" width="90">
               <template #default="{ row }">
-                <el-tag :type="row.runStatus === '运行中' ? 'success' : 'info'" size="small">{{ row.runStatus }}</el-tag>
+                <el-tag
+                  v-if="row.runStatus === '监测中'"
+                  type="primary"
+                  size="small"
+                >监测中</el-tag>
+                <el-tag
+                  v-else
+                  :type="row.runStatus === '开' ? 'success' : 'info'"
+                  size="small"
+                >{{ row.runStatus }}</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -530,7 +539,7 @@
           <div class="bio-block-title">设备详情</div>
           <div class="bp-ref-hint">
             <el-icon><InfoFilled /></el-icon>
-            设备卡片、开关控制及维保信息见下方「设备详情」板块
+            设备卡片、运行状态及维保信息见下方「设备详情」板块
           </div>
         </div>
       </div>
@@ -557,30 +566,53 @@
                 {{ device.online ? '在线' : '离线' }}
               </el-tag>
             </div>
-            <div class="device-meta">
-              <span>编号：{{ device.uuid }}</span>
-              <span>{{ device.attribute }}</span>
-            </div>
-            <div v-if="device.controllable" class="device-control">
-              <el-switch
-                v-model="device.on"
-                :disabled="!device.online"
-                @change="handleDeviceToggle(device)"
-              />
-              <span class="device-run-status" :class="{ on: device.on && device.online }">
-                {{ !device.online ? '离线' : device.on ? '运行中' : '已关闭' }}
-              </span>
-            </div>
-            <div v-if="device.on && device.online && device.extra" class="device-extra">
-              <div v-for="(val, key) in device.extra" :key="key" class="extra-row">
-                <span>{{ extraLabelMap[key] || key }}</span>
-                <span>{{ formatExtraValue(key, val) }}</span>
+            <div class="device-body">
+              <div class="device-fields">
+                <div class="device-field">
+                  <span class="device-field-label">编号</span>
+                  <span class="device-field-value mono">{{ device.uuid }}</span>
+                </div>
+                <div class="device-field">
+                  <span class="device-field-label">功能</span>
+                  <span class="device-field-value">{{ device.attribute }}</span>
+                </div>
+                <div v-if="device.controllable" class="device-field">
+                  <span class="device-field-label">开关状态</span>
+                  <span class="device-field-value">
+                    <el-tag :type="device.on ? 'success' : 'info'" size="small">{{ device.on ? '开' : '关' }}</el-tag>
+                  </span>
+                </div>
               </div>
-            </div>
-            <div class="device-maintain">
-              <span>故障 {{ device.faultCount }} 次</span>
-              <span>保养 {{ device.nextMaintainDate }}</span>
-              <el-tag :type="maintainTagType(device.maintainStatus)" size="small">{{ device.maintainStatus }}</el-tag>
+
+              <div v-if="device.on && device.online && device.extra" class="device-section">
+                <div class="device-section-title">运行参数</div>
+                <div class="device-fields">
+                  <div v-for="(val, key) in device.extra" :key="key" class="device-field compact">
+                    <span class="device-field-label">{{ extraLabelMap[key] || key }}</span>
+                    <span class="device-field-value highlight">{{ formatExtraValue(key, val) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="device-section">
+                <div class="device-section-title">维保信息</div>
+                <div class="device-fields maintain-fields">
+                  <div class="device-field compact">
+                    <span class="device-field-label">故障次数</span>
+                    <span class="device-field-value">{{ device.faultCount }} 次</span>
+                  </div>
+                  <div class="device-field compact">
+                    <span class="device-field-label">下次保养</span>
+                    <span class="device-field-value nowrap">{{ device.nextMaintainDate }}</span>
+                  </div>
+                  <div class="device-field compact">
+                    <span class="device-field-label">维保状态</span>
+                    <span class="device-field-value">
+                      <el-tag :type="maintainTagType(device.maintainStatus)" size="small">{{ device.maintainStatus }}</el-tag>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -755,6 +787,7 @@ import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import CameraPanel from '@/components/CameraPanel.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
+import { useChartResize } from '@/composables/useChartResize'
 import { getBarnCameras } from '@/utils/cameraMockData'
 import {
   getBatchInfo,
@@ -1101,7 +1134,7 @@ const deviceRunningParams = computed(() => {
 
   for (const d of deviceList.value) {
     if (!d.online) continue
-    const runStatus = d.controllable ? (d.on ? '运行中' : '待机') : '监测中'
+    const runStatus = d.controllable ? (d.on ? '开' : '关') : '监测中'
 
     if (d.extra && d.on) {
       for (const [key, val] of Object.entries(d.extra)) {
@@ -1126,10 +1159,6 @@ const deviceRunningParams = computed(() => {
 })
 
 const goBack = () => router.push('/farm')
-
-const handleDeviceToggle = (_device: DeviceItem) => {
-  // mock: 设备开关
-}
 
 const generateDateData = (days: number) => {
   const dates: string[] = []
@@ -1326,11 +1355,10 @@ watch(factoryType, () => {
   refreshBarnData()
 })
 
-const handleResize = () => {
-  chartInstance?.resize()
-  bioChartInstance?.resize()
-  batchChartInstance?.resize()
-}
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [chartInstance, bioChartInstance, batchChartInstance],
+  () => [chartRef.value, bioChartRef.value, batchChartRef.value]
+)
 
 onMounted(() => {
   nextTick(() => {
@@ -1339,13 +1367,13 @@ onMounted(() => {
       initBioChart()
       initBatchChart()
       initEnvChart()
+      observeContainers()
+      resizeCharts()
     }, 100)
   })
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
   chartInstance?.dispose()
   bioChartInstance?.dispose()
   batchChartInstance?.dispose()
@@ -1934,18 +1962,6 @@ onUnmounted(() => {
   height: 220px;
 }
 
-.device-maintain {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #ebeef5;
-  font-size: 11px;
-  color: #909399;
-}
-
 /* 生物 KPI */
 .bio-kpi-grid {
   display: grid;
@@ -2177,48 +2193,88 @@ onUnmounted(() => {
   color: #909399;
 }
 
-.device-meta {
+.device-body {
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.device-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.device-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
 }
 
-.device-run-status {
-  font-size: 12px;
-  color: #909399;
+.device-fields.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
-.device-run-status.on {
-  color: #67c23a;
+.device-fields.maintain-fields {
+  grid-template-columns: minmax(0, 0.9fr) minmax(96px, 1.1fr) minmax(0, 0.9fr);
+  gap: 8px 10px;
 }
 
-.device-extra {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #ebeef5;
+.device-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
-.extra-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #606266;
+.device-field.compact {
+  gap: 3px;
 }
 
-.extra-row span:last-child {
-  color: #409eff;
+.device-field-label {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #909399;
   font-weight: 500;
+}
+
+.device-field-value {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #303133;
+  font-weight: 600;
+}
+
+.device-field-value.nowrap {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.device-field-value.mono {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #606266;
+  word-break: break-all;
+}
+
+.device-field-value.highlight {
+  color: #409eff;
+}
+
+.device-section {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.device-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #606266;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #ebeef5;
+}
+
+.device-card.offline .device-field-value.highlight {
+  color: #909399;
 }
 
 @media (max-width: 1200px) {
@@ -2228,6 +2284,11 @@ onUnmounted(() => {
   .production-items,
   .energy-stat-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .device-fields.cols-3,
+  .device-fields.maintain-fields {
+    grid-template-columns: 1fr 1fr;
   }
 
   .env-indicators {
@@ -2240,7 +2301,10 @@ onUnmounted(() => {
   .special-grid,
   .bp-kpi-grid,
   .production-items,
-  .energy-stat-grid {
+  .energy-stat-grid,
+  .device-fields,
+  .device-fields.cols-3,
+  .device-fields.maintain-fields {
     grid-template-columns: 1fr 1fr;
   }
 

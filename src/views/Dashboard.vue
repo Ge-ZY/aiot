@@ -155,6 +155,7 @@ import { useRouter } from 'vue-router'
 import { ArrowLeft, FullScreen, Close } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { createChinaMapOption, createProvinceMapOption, type CityFarm, type AlarmMapProvider } from '@/utils/chinaMapConfig'
+import { useChartResize } from '@/composables/useChartResize'
 
 interface DashboardAlarm {
   id: number
@@ -467,12 +468,18 @@ const showProvinceMapAsync = (provinceName: string): Promise<void> => {
   })
 }
 
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [mapChart],
+  () => [mapChartRef.value]
+)
+
 const initMapChart = () => {
   if (!mapChartRef.value) return
 
   isMapLoading.value = true
 
   try {
+    mapChart?.dispose()
     mapChart = echarts.init(mapChartRef.value)
 
     const option = createChinaMapOption(alarmMapProvider)
@@ -489,8 +496,10 @@ const initMapChart = () => {
       }
     })
 
-    // 只需要一次 resize
-    setTimeout(() => mapChart?.resize(), 50)
+    nextTick(() => {
+      observeContainers()
+      resizeCharts()
+    })
   } catch (error) {
     console.error('地图初始化失败:', error)
   } finally {
@@ -504,7 +513,7 @@ const showProvinceMap = (provinceName: string) => {
   currentMapLevel.value = provinceName
   const option = createProvinceMapOption(provinceName, alarmMapProvider)
   mapChart.setOption(option, true)
-  setTimeout(() => mapChart?.resize(), 0)
+  nextTick(resizeCharts)
 }
 
 // 返回全国地图
@@ -513,7 +522,7 @@ const backToChinaMap = () => {
   currentMapLevel.value = 'china'
   const option = createChinaMapOption(alarmMapProvider)
   mapChart.setOption(option, true)
-  setTimeout(() => mapChart?.resize(), 0)
+  nextTick(resizeCharts)
 }
 
 // 处理右键事件
@@ -548,15 +557,12 @@ const toggleFullscreen = () => {
     document.exitFullscreen()
     isFullscreen.value = false
   }
-}
-
-const handleResize = () => {
-  mapChart?.resize()
+  nextTick(resizeCharts)
 }
 
 onMounted(() => {
   // 挂载全局事件处理函数
-  ; (window as any).handleFarmClick = handleFarmClick
+  (window as any).handleFarmClick = handleFarmClick
 
   // 优先初始化地图（用户第一眼看到的）
   nextTick(() => {
@@ -568,11 +574,9 @@ onMounted(() => {
     }
   })
 
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
   // 移除全局事件处理函数
   delete (window as any).handleFarmClick
   mapChart?.dispose()
@@ -583,6 +587,7 @@ onUnmounted(() => {
 .dashboard {
   position: fixed;
   inset: 0;
+  min-width: var(--app-min-width);
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
@@ -924,9 +929,20 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.alarm-handle-tag.status-待处理 { color: #f56c6c; background: rgba(245, 108, 108, 0.2); }
-.alarm-handle-tag.status-处理中 { color: #e6a23c; background: rgba(230, 162, 60, 0.2); }
-.alarm-handle-tag.status-已关闭 { color: #67c23a; background: rgba(103, 194, 58, 0.2); }
+.alarm-handle-tag.status-待处理 {
+  color: #f56c6c;
+  background: rgba(245, 108, 108, 0.2);
+}
+
+.alarm-handle-tag.status-处理中 {
+  color: #e6a23c;
+  background: rgba(230, 162, 60, 0.2);
+}
+
+.alarm-handle-tag.status-已关闭 {
+  color: #67c23a;
+  background: rgba(103, 194, 58, 0.2);
+}
 
 .alarm-workflow-row {
   display: flex;

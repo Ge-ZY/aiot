@@ -17,14 +17,14 @@
           <el-icon><House /></el-icon>
           <span>农场详情</span>
         </el-menu-item>
-        <el-menu-item index="/farm/alarm-detail">
+        <!-- <el-menu-item index="/farm/alarm-detail">
           <el-icon><Warning /></el-icon>
           <span>报警详情</span>
         </el-menu-item>
         <el-menu-item index="/farm/device-detail">
           <el-icon><Setting /></el-icon>
           <span>设备详情</span>
-        </el-menu-item>
+        </el-menu-item> -->
         <el-menu-item index="/farm/monitor-detail">
           <el-icon><Camera /></el-icon>
           <span>监控点位</span>
@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, Monitor, Warning, Setting, Camera, DataAnalysis } from '@element-plus/icons-vue'
+import { House, Monitor, Camera, DataAnalysis } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -69,13 +69,15 @@ const handleMenuSelect = (index: string) => {
 <style scoped>
 .main-layout {
   display: flex;
-  width: 100vw;
+  width: 100%;
+  min-width: var(--app-min-width);
   height: 100vh;
   overflow: hidden;
 }
 
 .layout-sidebar {
   width: 220px;
+  flex-shrink: 0;
   height: 100%;
   background: linear-gradient(180deg, #001529 0%, #002140 100%);
   color: white;
@@ -124,8 +126,9 @@ const handleMenuSelect = (index: string) => {
 
 .layout-content {
   flex: 1;
+  min-width: 0;
   min-height: 0;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: auto;
   background: #f0f2f5;
   position: relative;

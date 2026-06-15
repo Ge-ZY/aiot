@@ -302,6 +302,7 @@ const createChinaMapOption = (provider?: AlarmMapProvider): any => {
 
 // 创建省级地图配置
 const createProvinceMapOption = (provinceName: string, provider?: AlarmMapProvider): any => {
+  console.log('provinceName', provinceName)
   const provinceGeoJSON = getProvinceCitiesGeoJSON(provinceName)
   return createMapOption(provinceName, provinceGeoJSON, provider)
 }

@@ -1,4 +1,5 @@
 :root {
+  --app-min-width: 1280px;
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
@@ -52,6 +53,12 @@
 
 body {
   margin: 0;
+  min-width: var(--app-min-width);
+}
+
+html {
+  min-width: var(--app-min-width);
+  overflow-x: auto;
 }
 
 h1,
@@ -157,7 +164,8 @@ code {
 }
 
 #app {
-  width: 100vw;
+  width: 100%;
+  min-width: var(--app-min-width);
   height: 100vh;
   margin: 0;
   padding: 0;

@@ -99,6 +99,90 @@
           </div>
         </div>
 
+        <!-- 经营效益 -->
+        <div class="panel business-panel">
+          <div class="panel-header-row">
+            <div class="panel-title">经营效益</div>
+            <span class="panel-meta">本月累计 · 截至 {{ todayDate }}</span>
+          </div>
+
+          <!-- 经营总览 -->
+          <div class="business-section">
+            <div class="business-section-title">经营总览</div>
+            <div class="business-overview-grid">
+              <div
+                v-for="item in businessOverviewItems"
+                :key="item.key"
+                class="business-overview-card"
+              >
+                <div class="business-overview-value">
+                  {{ item.value }}<span class="unit">{{ item.unit }}</span>
+                </div>
+                <div class="business-overview-label">{{ item.label }}</div>
+                <div v-if="item.change" class="business-overview-change" :class="item.changeUp ? 'up' : 'down'">
+                  {{ item.change }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 成本分析 -->
+          <div class="business-section">
+            <div class="business-section-header">
+              <div class="business-section-title">成本分析</div>
+              <div class="business-section-meta">
+                总成本 {{ businessBenefit.costAnalysis.totalCost }} {{ businessBenefit.costAnalysis.totalUnit }}
+                · {{ businessBenefit.costAnalysis.unitCostLabel }}
+                {{ businessBenefit.costAnalysis.unitCost }} 元
+              </div>
+            </div>
+            <el-table :data="businessBenefit.costAnalysis.items" size="small" stripe class="business-table">
+              <el-table-column prop="name" label="成本项" min-width="120" />
+              <el-table-column label="金额（万元）" width="120">
+                <template #default="{ row }">{{ row.amount }}</template>
+              </el-table-column>
+              <el-table-column label="占比" width="100">
+                <template #default="{ row }">{{ row.ratio }}%</template>
+              </el-table-column>
+              <el-table-column label="较上月" width="100">
+                <template #default="{ row }">
+                  <span :class="row.changePercent > 0 ? 'change-up' : row.changePercent < 0 ? 'change-down' : ''">
+                    {{ row.changePercent > 0 ? '+' : '' }}{{ row.changePercent }}%
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+
+          <!-- 销售业绩 -->
+          <div class="business-section">
+            <div class="business-section-title">销售业绩</div>
+            <div class="sales-kpi-row">
+              <div class="sales-kpi-card">
+                <div class="sales-kpi-value">{{ businessBenefit.salesPerformance.volume }}</div>
+                <div class="sales-kpi-label">
+                  {{ businessBenefit.salesPerformance.volumeLabel }}（{{ businessBenefit.salesPerformance.volumeUnit }}）
+                </div>
+                <div class="sales-kpi-change" :class="businessBenefit.salesPerformance.volumeChange >= 0 ? 'up' : 'down'">
+                  较上月 {{ businessBenefit.salesPerformance.volumeChange >= 0 ? '+' : '' }}{{ businessBenefit.salesPerformance.volumeChange }}%
+                </div>
+              </div>
+              <div class="sales-kpi-card primary">
+                <div class="sales-kpi-value">{{ businessBenefit.salesPerformance.revenue }}</div>
+                <div class="sales-kpi-label">销售额（{{ businessBenefit.salesPerformance.revenueUnit }}）</div>
+                <div class="sales-kpi-change" :class="businessBenefit.salesPerformance.revenueChange >= 0 ? 'up' : 'down'">
+                  较上月 {{ businessBenefit.salesPerformance.revenueChange >= 0 ? '+' : '' }}{{ businessBenefit.salesPerformance.revenueChange }}%
+                </div>
+              </div>
+            </div>
+            <el-table :data="businessBenefit.salesPerformance.details" size="small" stripe class="business-table">
+              <el-table-column prop="product" label="品类" min-width="140" />
+              <el-table-column prop="volume" label="销量" width="140" />
+              <el-table-column prop="revenue" label="销售额" width="140" />
+            </el-table>
+          </div>
+        </div>
+
         <!-- 中部：趋势 + 报警列表 -->
         <div class="middle-section">
           <div class="panel chart-panel">
@@ -271,11 +355,13 @@ import type { EChartsOption } from 'echarts'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import CameraPanel from '@/components/CameraPanel.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
+import { useChartResize } from '@/composables/useChartResize'
 import { factoryCameras } from '@/utils/cameraMockData'
 import {
   getTodayProduction,
   getEnvCompliance,
   getOrderFulfillment,
+  getBusinessBenefit,
   type AlarmHandleStatus,
 } from '@/utils/farmOperationsMock'
 
@@ -476,6 +562,16 @@ const unprocessedAlarmCount = computed(() =>
   factoryAlarms.value.filter(a => a.handleStatus !== '已关闭').length
 )
 const orderFulfillment = computed(() => getOrderFulfillment(factoryOrders.value))
+const businessBenefit = computed(() => getBusinessBenefit(selectedFactoryType.value))
+
+const businessOverviewItems = computed(() => {
+  const { stock, output, outputValue } = businessBenefit.value.overview
+  return [
+    { key: 'stock', label: stock.label, value: stock.value, unit: stock.unit, change: stock.change, changeUp: stock.changeUp },
+    { key: 'output', label: output.label, value: output.value, unit: output.unit, change: output.change, changeUp: output.changeUp },
+    { key: 'outputValue', label: outputValue.label, value: outputValue.value, unit: outputValue.unit, change: outputValue.change, changeUp: outputValue.changeUp },
+  ]
+})
 
 const todayBriefingItems = computed(() => {
   const t = todayProduction.value
@@ -757,11 +853,20 @@ const generateChartData = (factoryType: string): EChartsOption => {
   return { xAxis: baseAxis, yAxis: { type: 'value' }, series: [] }
 }
 
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [chartInstance],
+  () => [chartRef.value]
+)
+
 const initChart = () => {
   if (!chartRef.value || !hasFactory.value) return
   if (chartInstance) chartInstance.dispose()
   chartInstance = echarts.init(chartRef.value)
   updateChart()
+  nextTick(() => {
+    observeContainers()
+    resizeCharts()
+  })
 }
 
 const updateChart = () => {
@@ -1087,6 +1192,139 @@ onUnmounted(() => {
   color: #409eff;
   font-weight: 600;
 }
+
+/* 经营效益 */
+.business-panel {
+  margin-bottom: 16px;
+}
+
+.business-section {
+  padding: 14px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.business-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.business-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+}
+
+.business-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.business-section-header .business-section-title {
+  margin-bottom: 0;
+}
+
+.business-section-meta {
+  font-size: 12px;
+  color: #909399;
+}
+
+.business-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.business-overview-card {
+  padding: 16px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.business-overview-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.business-overview-value .unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: #909399;
+  margin-left: 4px;
+}
+
+.business-overview-label {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 4px;
+}
+
+.business-overview-change {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.business-overview-change.up { color: #f56c6c; }
+.business-overview-change.down { color: #67c23a; }
+
+.business-table {
+  width: 100%;
+}
+
+.change-up { color: #f56c6c; }
+.change-down { color: #67c23a; }
+
+.sales-kpi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sales-kpi-card {
+  padding: 16px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.sales-kpi-card.primary {
+  background: #ecf5ff;
+  border-color: #d9ecff;
+}
+
+.sales-kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.sales-kpi-card.primary .sales-kpi-value {
+  color: #409eff;
+}
+
+.sales-kpi-label {
+  font-size: 12px;
+  color: #909399;
+  margin: 4px 0;
+}
+
+.sales-kpi-change {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sales-kpi-change.up { color: #67c23a; }
+.sales-kpi-change.down { color: #f56c6c; }
 
 /* 中部布局 */
 .middle-section {

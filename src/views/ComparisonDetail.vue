@@ -186,6 +186,7 @@ import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
+import { useChartResize } from '@/composables/useChartResize'
 import {
   getProvinceStats,
   getRegionStats,
@@ -351,28 +352,27 @@ const initTypeChart = () => {
   typeChart.setOption(option)
 }
 
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [regionChart, alarmChart, typeChart],
+  () => [regionChartRef.value, alarmChartRef.value, typeChartRef.value]
+)
+
 const initCharts = async () => {
   await nextTick()
   initRegionChart()
   initAlarmChart()
   initTypeChart()
-}
-
-const handleResize = () => {
-  regionChart?.resize()
-  alarmChart?.resize()
-  typeChart?.resize()
+  observeContainers()
+  resizeCharts()
 }
 
 watch(selectedFactoryType, () => initCharts())
 
 onMounted(() => {
   setTimeout(initCharts, 100)
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
   regionChart?.dispose()
   alarmChart?.dispose()
   typeChart?.dispose()

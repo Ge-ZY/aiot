@@ -176,7 +176,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, markRaw, nextTick } from 'vue'
+import { ref, computed, markRaw, nextTick, onUnmounted } from 'vue'
+import { useChartResize } from '@/composables/useChartResize'
 import { Search, Monitor, Document, Tools, Box, Coin, DataLine } from '@element-plus/icons-vue'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import * as echarts from 'echarts'
@@ -553,15 +554,26 @@ const handleViewDetail = (row: any) => {
   })
 }
 
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [detailChart],
+  () => [detailChartRef.value]
+)
+
 // 初始化详情图表
 const initDetailChart = () => {
   if (!detailChartRef.value) return
+  detailChart?.dispose()
   detailChart = echarts.init(detailChartRef.value)
   updateDetailChart()
-  window.addEventListener('resize', () => {
-    detailChart?.resize()
+  nextTick(() => {
+    observeContainers()
+    resizeCharts()
   })
 }
+
+onUnmounted(() => {
+  detailChart?.dispose()
+})
 
 // 更新详情图表
 const updateDetailChart = () => {

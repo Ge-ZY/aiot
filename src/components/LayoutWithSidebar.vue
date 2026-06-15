@@ -68,6 +68,7 @@ defineExpose({
 .layout-with-sidebar {
   display: flex;
   width: 100%;
+  min-width: calc(var(--app-min-width) - 220px);
   min-height: 100%;
   align-items: flex-start;
 }

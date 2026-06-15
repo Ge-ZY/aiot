@@ -861,3 +861,193 @@ export const emergencyHandleStatusTag = (status: EmergencyEvent['handleStatus'])
   if (status === '处置中') return 'warning'
   return 'danger'
 }
+
+/** 经营效益 */
+export interface BusinessOverviewMetric {
+  label: string
+  value: string | number
+  unit: string
+  change?: string
+  changeUp?: boolean
+}
+
+export interface CostAnalysisItem {
+  name: string
+  amount: number
+  ratio: number
+  changePercent: number
+}
+
+export interface CostAnalysis {
+  totalCost: number
+  totalUnit: string
+  unitCostLabel: string
+  unitCost: number
+  items: CostAnalysisItem[]
+}
+
+export interface SalesDetail {
+  product: string
+  volume: string
+  revenue: string
+}
+
+export interface SalesPerformance {
+  volume: number
+  volumeUnit: string
+  volumeLabel: string
+  revenue: number
+  revenueUnit: string
+  volumeChange: number
+  revenueChange: number
+  details: SalesDetail[]
+}
+
+export interface BusinessBenefit {
+  overview: {
+    stock: BusinessOverviewMetric
+    output: BusinessOverviewMetric
+    outputValue: BusinessOverviewMetric
+  }
+  costAnalysis: CostAnalysis
+  salesPerformance: SalesPerformance
+}
+
+const businessBenefitByType: Record<string, BusinessBenefit> = {
+  pig: {
+    overview: {
+      stock: { label: '存栏', value: '12,580', unit: '头', change: '较上月 +2.1%', changeUp: true },
+      output: { label: '本月出栏', value: 320, unit: '头', change: '较上月 +5.6%', changeUp: true },
+      outputValue: { label: '本月产值', value: 186.5, unit: '万元', change: '较上月 +4.8%', changeUp: true },
+    },
+    costAnalysis: {
+      totalCost: 152.8,
+      totalUnit: '万元',
+      unitCostLabel: '头均成本',
+      unitCost: 477,
+      items: [
+        { name: '饲料成本', amount: 86.2, ratio: 56.4, changePercent: -1.2 },
+        { name: '人工成本', amount: 28.5, ratio: 18.7, changePercent: 0.5 },
+        { name: '兽药疫苗', amount: 12.8, ratio: 8.4, changePercent: -2.0 },
+        { name: '水电能耗', amount: 15.3, ratio: 10.0, changePercent: 1.8 },
+        { name: '其他', amount: 10.0, ratio: 6.5, changePercent: 0 },
+      ],
+    },
+    salesPerformance: {
+      volume: 298,
+      volumeUnit: '头',
+      volumeLabel: '本月销量',
+      revenue: 172.6,
+      revenueUnit: '万元',
+      volumeChange: 6.2,
+      revenueChange: 5.1,
+      details: [
+        { product: '三元育肥猪', volume: '220 头', revenue: '128.5 万元' },
+        { product: '仔猪', volume: '78 头', revenue: '44.1 万元' },
+      ],
+    },
+  },
+  chicken: {
+    overview: {
+      stock: { label: '存栏', value: '86,200', unit: '羽', change: '较上月 -0.8%', changeUp: false },
+      output: { label: '本月产蛋', value: 245, unit: '万枚', change: '较上月 +3.2%', changeUp: true },
+      outputValue: { label: '本月产值', value: 128.3, unit: '万元', change: '较上月 +2.5%', changeUp: true },
+    },
+    costAnalysis: {
+      totalCost: 98.6,
+      totalUnit: '万元',
+      unitCostLabel: '单羽成本',
+      unitCost: 11.44,
+      items: [
+        { name: '饲料成本', amount: 62.4, ratio: 63.3, changePercent: 0.8 },
+        { name: '人工成本', amount: 15.2, ratio: 15.4, changePercent: 0 },
+        { name: '兽药疫苗', amount: 8.6, ratio: 8.7, changePercent: -1.5 },
+        { name: '水电能耗', amount: 9.8, ratio: 9.9, changePercent: 2.1 },
+        { name: '其他', amount: 2.6, ratio: 2.7, changePercent: 0 },
+      ],
+    },
+    salesPerformance: {
+      volume: 238,
+      volumeUnit: '万枚',
+      volumeLabel: '本月销量',
+      revenue: 124.8,
+      revenueUnit: '万元',
+      volumeChange: 4.5,
+      revenueChange: 3.8,
+      details: [
+        { product: '鲜鸡蛋', volume: '210 万枚', revenue: '112.6 万元' },
+        { product: '淘汰鸡', volume: '1.2 万羽', revenue: '12.2 万元' },
+      ],
+    },
+  },
+  aquatic: {
+    overview: {
+      stock: { label: '存栏', value: '48.2', unit: '万尾', change: '较上月 +1.5%', changeUp: true },
+      output: { label: '本月出塘', value: 12.5, unit: '吨', change: '较上月 +8.0%', changeUp: true },
+      outputValue: { label: '本月产值', value: 95.8, unit: '万元', change: '较上月 +7.2%', changeUp: true },
+    },
+    costAnalysis: {
+      totalCost: 72.4,
+      totalUnit: '万元',
+      unitCostLabel: '斤均成本',
+      unitCost: 2.9,
+      items: [
+        { name: '饲料成本', amount: 38.6, ratio: 53.3, changePercent: 1.0 },
+        { name: '苗种成本', amount: 12.5, ratio: 17.3, changePercent: -0.5 },
+        { name: '水电能耗', amount: 10.2, ratio: 14.1, changePercent: 2.5 },
+        { name: '人工成本', amount: 7.8, ratio: 10.8, changePercent: 0 },
+        { name: '其他', amount: 3.3, ratio: 4.5, changePercent: 0 },
+      ],
+    },
+    salesPerformance: {
+      volume: 11.8,
+      volumeUnit: '吨',
+      volumeLabel: '本月销量',
+      revenue: 89.5,
+      revenueUnit: '万元',
+      volumeChange: 7.5,
+      revenueChange: 6.8,
+      details: [
+        { product: '南美白对虾', volume: '8.5 吨', revenue: '68.2 万元' },
+        { product: '罗氏沼虾', volume: '3.3 吨', revenue: '21.3 万元' },
+      ],
+    },
+  },
+  feed: {
+    overview: {
+      stock: { label: '成品库存', value: 2860, unit: '吨', change: '较上周 -3.5%', changeUp: false },
+      output: { label: '本月产量', value: 2180, unit: '吨', change: '较上月 +2.8%', changeUp: true },
+      outputValue: { label: '本月产值', value: 652.0, unit: '万元', change: '较上月 +3.1%', changeUp: true },
+    },
+    costAnalysis: {
+      totalCost: 548.6,
+      totalUnit: '万元',
+      unitCostLabel: '吨均成本',
+      unitCost: 2516,
+      items: [
+        { name: '原料成本', amount: 412.5, ratio: 75.2, changePercent: 1.2 },
+        { name: '人工成本', amount: 52.8, ratio: 9.6, changePercent: 0 },
+        { name: '能耗成本', amount: 48.6, ratio: 8.9, changePercent: -0.8 },
+        { name: '包装运输', amount: 22.4, ratio: 4.1, changePercent: 0.5 },
+        { name: '其他', amount: 12.3, ratio: 2.2, changePercent: 0 },
+      ],
+    },
+    salesPerformance: {
+      volume: 2050,
+      volumeUnit: '吨',
+      volumeLabel: '本月销量',
+      revenue: 618.5,
+      revenueUnit: '万元',
+      volumeChange: 3.6,
+      revenueChange: 4.2,
+      details: [
+        { product: '猪料', volume: '920 吨', revenue: '285.6 万元' },
+        { product: '鸡料', volume: '780 吨', revenue: '218.4 万元' },
+        { product: '水产料', volume: '350 吨', revenue: '114.5 万元' },
+      ],
+    },
+  },
+}
+
+export const getBusinessBenefit = (factoryType: string): BusinessBenefit =>
+  businessBenefitByType[factoryType] ?? businessBenefitByType.pig
