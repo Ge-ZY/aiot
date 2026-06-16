@@ -20,7 +20,15 @@
 
     <div class="pillars-stack">
       <!-- 养殖与生产 -->
-      <div class="panel breeding-production-panel">
+      <div
+        v-if="canAny([
+          PERMISSION.MODULE_BREEDING,
+          PERMISSION.MODULE_FEEDING,
+          PERMISSION.MODULE_BIO_PREVENTION,
+          PERMISSION.MODULE_FEED_PRODUCTION,
+        ])"
+        class="panel breeding-production-panel"
+      >
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><TrendCharts /></el-icon> 养殖与生产</div>
           <el-radio-group v-model="breedingProdTab" size="small">
@@ -359,7 +367,7 @@
       </div>
 
       <!-- 1. 生物数据 -->
-      <div class="panel">
+      <div v-if="can(PERMISSION.MODULE_BIO)" class="panel">
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><DataLine /></el-icon> 生物数据</div>
         </div>
@@ -411,7 +419,7 @@
       </div>
 
       <!-- 2. 环境数据 -->
-      <div class="panel">
+      <div v-if="can(PERMISSION.MODULE_ENV_DETAIL)" class="panel">
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><Sunny /></el-icon> 环境数据</div>
           <span class="panel-meta">达标率 {{ envComplianceRate }}%</span>
@@ -453,12 +461,12 @@
       </div>
 
       <!-- 舍内监控 -->
-      <div class="panel">
+      <div v-if="can(PERMISSION.MONITOR_VIEW)" class="panel">
         <CameraPanel :cameras="barnCameraList" title="舍内监控" />
       </div>
 
       <!-- 设备管理 -->
-      <div class="panel device-mgmt-panel">
+      <div v-if="can(PERMISSION.MODULE_DEVICE_MGMT)" class="panel device-mgmt-panel">
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><Monitor /></el-icon> 设备管理</div>
         </div>
@@ -545,7 +553,7 @@
       </div>
 
       <!-- 3. 设备详情 -->
-      <div class="panel">
+      <div v-if="can(PERMISSION.MODULE_DEVICE_DETAIL)" class="panel">
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><Setting /></el-icon> 设备详情</div>
           <span class="panel-meta">在线 {{ deviceOnlineCount }}/{{ deviceList.length }}</span>
@@ -619,7 +627,7 @@
       </div>
 
       <!-- 能耗监测 -->
-      <div class="panel energy-panel">
+      <div v-if="can(PERMISSION.MODULE_ENERGY)" class="panel energy-panel">
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><Odometer /></el-icon> 能耗监测</div>
         </div>
@@ -687,7 +695,7 @@
       </div>
 
       <!-- 生产安全 -->
-      <div class="panel safety-panel">
+      <div v-if="can(PERMISSION.MODULE_SAFETY)" class="panel safety-panel">
         <div class="panel-header-row">
           <div class="panel-title"><el-icon><Warning /></el-icon> 生产安全</div>
         </div>
@@ -788,6 +796,7 @@ import type { EChartsOption } from 'echarts'
 import CameraPanel from '@/components/CameraPanel.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
 import { useChartResize } from '@/composables/useChartResize'
+import { usePermission } from '@/composables/usePermission'
 import { getBarnCameras } from '@/utils/cameraMockData'
 import {
   getBatchInfo,
@@ -841,6 +850,7 @@ interface DeviceItem {
 
 const router = useRouter()
 const route = useRoute()
+const { can, canAny, PERMISSION } = usePermission()
 const { selectedFactoryType, factoryTypes } = useCompanyTree()
 
 type FactoryType = 'pig' | 'chicken' | 'aquatic' | 'feed'

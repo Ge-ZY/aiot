@@ -8,6 +8,7 @@
         <h1>正芯农牧 · 报警监控大屏</h1>
       </div>
       <div class="header-right">
+        <RoleSwitcher theme="light" class="dashboard-role-switcher" />
         <span class="update-time">{{ updateTimeText }}</span>
         <el-button type="primary" :icon="FullScreen" size="small" @click="toggleFullscreen">
           {{ isFullscreen ? '退出全屏' : '全屏' }}
@@ -92,8 +93,8 @@
             </div>
           </div>
 
-          <!-- 底部三小板块 -->
-          <div class="stats-row">
+          <!-- 底部三小板块（总负责人可见跨厂统计） -->
+          <div v-if="can(PERMISSION.MODULE_DASHBOARD_NATIONAL)" class="stats-row">
             <!-- Top 工厂排行 -->
             <div class="panel mini-panel">
               <div class="mini-panel-title">重点工厂</div>
@@ -156,6 +157,8 @@ import { ArrowLeft, FullScreen, Close } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { createChinaMapOption, createProvinceMapOption, type CityFarm, type AlarmMapProvider } from '@/utils/chinaMapConfig'
 import { useChartResize } from '@/composables/useChartResize'
+import { usePermission } from '@/composables/usePermission'
+import RoleSwitcher from '@/components/RoleSwitcher.vue'
 
 interface DashboardAlarm {
   id: number
@@ -178,6 +181,7 @@ interface DashboardAlarm {
 type KpiFilter = 'total' | 'severe' | 'farm' | 'todayNew' | 'unprocessed'
 
 const router = useRouter()
+const { can, PERMISSION } = usePermission()
 const isFullscreen = ref(false)
 const mapChartRef = ref<HTMLElement | null>(null)
 let mapChart: echarts.ECharts | null = null

@@ -9,31 +9,40 @@
         class="sidebar-menu"
         @select="handleMenuSelect"
       >
-        <el-menu-item index="/">
+        <el-menu-item v-if="can(PERMISSION.MENU_DASHBOARD)" index="/">
           <el-icon><Monitor /></el-icon>
           <span>大屏可视化</span>
         </el-menu-item>
-        <el-menu-item index="/farm">
+        <el-menu-item v-if="can(PERMISSION.MENU_FARM)" index="/farm">
           <el-icon><House /></el-icon>
           <span>农场详情</span>
         </el-menu-item>
-        <!-- <el-menu-item index="/farm/alarm-detail">
-          <el-icon><Warning /></el-icon>
-          <span>报警详情</span>
-        </el-menu-item>
-        <el-menu-item index="/farm/device-detail">
-          <el-icon><Setting /></el-icon>
-          <span>设备详情</span>
-        </el-menu-item> -->
-        <el-menu-item index="/farm/monitor-detail">
+        <el-menu-item v-if="can(PERMISSION.MENU_MONITOR)" index="/farm/monitor-detail">
           <el-icon><Camera /></el-icon>
           <span>监控点位</span>
         </el-menu-item>
-        <el-menu-item index="/farm/comparison-detail">
+        <el-menu-item v-if="can(PERMISSION.MENU_COMPARE)" index="/farm/comparison-detail">
           <el-icon><DataAnalysis /></el-icon>
           <span>数据对比</span>
         </el-menu-item>
+
+        <el-sub-menu
+          v-if="canAny([PERMISSION.MENU_ROLE_MANAGE, PERMISSION.MENU_USER_MANAGE])"
+          index="system"
+        >
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item v-if="can(PERMISSION.MENU_ROLE_MANAGE)" index="/farm/system/role-manage">
+            角色管理
+          </el-menu-item>
+          <el-menu-item v-if="can(PERMISSION.MENU_USER_MANAGE)" index="/farm/system/user-manage">
+            用户管理
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
+      <RoleSwitcher />
     </div>
     <div class="layout-content">
       <router-view v-slot="{ Component }">
@@ -48,20 +57,26 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, Monitor, Camera, DataAnalysis } from '@element-plus/icons-vue'
+import { House, Monitor, Camera, DataAnalysis, Setting } from '@element-plus/icons-vue'
+import RoleSwitcher from '@/components/RoleSwitcher.vue'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { can, canAny, PERMISSION } = usePermission()
+
 const activeMenu = computed(() => {
   if (route.meta.hidden || route.path.startsWith('/farm/barn-detail')) {
     return '/farm'
+  }
+  if (route.path.startsWith('/farm/system/')) {
+    return route.path
   }
   return route.path
 })
 
 const handleMenuSelect = (index: string) => {
-  if (index === route.path) return
-  
+  if (index === 'system' || index === route.path) return
   router.push(index)
 }
 </script>
@@ -91,6 +106,7 @@ const handleMenuSelect = (index: string) => {
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .logo h3 {
@@ -105,15 +121,18 @@ const handleMenuSelect = (index: string) => {
   background: transparent;
   color: white;
   flex: 1;
+  overflow-y: auto;
 }
 
-.sidebar-menu :deep(.el-menu-item) {
+.sidebar-menu :deep(.el-menu-item),
+.sidebar-menu :deep(.el-sub-menu__title) {
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   transition: none !important;
 }
 
-.sidebar-menu :deep(.el-menu-item:hover) {
+.sidebar-menu :deep(.el-menu-item:hover),
+.sidebar-menu :deep(.el-sub-menu__title:hover) {
   color: #fff !important;
   background: rgba(255, 255, 255, 0.1) !important;
 }
@@ -122,6 +141,15 @@ const handleMenuSelect = (index: string) => {
   color: #fff !important;
   background: rgba(255, 255, 255, 0.1) !important;
   border-right: 3px solid #1890ff;
+}
+
+.sidebar-menu :deep(.el-sub-menu .el-menu) {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-menu :deep(.el-sub-menu .el-menu-item) {
+  padding-left: 48px !important;
+  min-width: auto;
 }
 
 .layout-content {

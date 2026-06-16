@@ -15,9 +15,9 @@
             </el-radio-button>
           </el-radio-group>
           <template v-if="hasFactory">
-            <el-button size="small" @click="goToDashboard">监控大屏</el-button>
-            <el-button size="small" @click="goToAlarmDetail">报警详情</el-button>
-            <el-button size="small" @click="goToDeviceDetail">设备详情</el-button>
+            <el-button v-if="can(PERMISSION.MENU_DASHBOARD)" size="small" @click="goToDashboard">监控大屏</el-button>
+            <el-button v-if="can(PERMISSION.MENU_ALARM)" size="small" @click="goToAlarmDetail">报警详情</el-button>
+            <el-button v-if="can(PERMISSION.MENU_DEVICE)" size="small" @click="goToDeviceDetail">设备详情</el-button>
           </template>
         </div>
       </div>
@@ -50,7 +50,7 @@
       <!-- 已选工厂：详情内容 -->
       <template v-else>
         <!-- 今日生产看板 -->
-        <div class="panel today-briefing">
+        <div v-if="can(PERMISSION.MODULE_TODAY_BOARD)" class="panel today-briefing">
           <div class="panel-header-row">
             <div class="panel-title">今日生产看板</div>
             <span class="panel-meta">{{ todayDate }} · 晨会数据</span>
@@ -65,7 +65,7 @@
         </div>
 
         <!-- 环境达标摘要 -->
-        <div class="env-summary-row">
+        <div v-if="can(PERMISSION.MODULE_ENV_SUMMARY)" class="env-summary-row">
           <div class="env-summary-card">
             <span class="env-summary-label">全厂环境达标率</span>
             <span class="env-summary-value">{{ envCompliance.overallRate }}%</span>
@@ -100,7 +100,7 @@
         </div>
 
         <!-- 经营效益 -->
-        <div class="panel business-panel">
+        <div v-if="can(PERMISSION.MODULE_BUSINESS)" class="panel business-panel">
           <div class="panel-header-row">
             <div class="panel-title">经营效益</div>
             <span class="panel-meta">本月累计 · 截至 {{ todayDate }}</span>
@@ -185,7 +185,7 @@
 
         <!-- 中部：趋势 + 报警列表 -->
         <div class="middle-section">
-          <div class="panel chart-panel">
+          <div v-if="can(PERMISSION.MODULE_DATA_MONITOR)" class="panel chart-panel">
             <div class="panel-header-row">
               <div class="panel-title">数据监测</div>
               <div class="panel-actions">
@@ -206,7 +206,7 @@
             <div ref="chartRef" class="chart-container"></div>
           </div>
 
-          <div class="panel alarm-panel">
+          <div v-if="can(PERMISSION.ALARM_READ)" class="panel alarm-panel">
             <div class="panel-header-row">
               <div class="panel-title">本厂报警</div>
               <span class="alarm-badge">{{ filteredAlarms.length }} 条</span>
@@ -237,12 +237,12 @@
         </div>
 
         <!-- 厂区监控 -->
-        <div class="panel camera-section">
+        <div v-if="can(PERMISSION.MONITOR_VIEW)" class="panel camera-section">
           <CameraPanel :cameras="factoryCameraList" title="厂区监控" />
         </div>
 
         <!-- 订单详情 -->
-        <div class="panel order-section">
+        <div v-if="can(PERMISSION.MODULE_ORDER)" class="panel order-section">
           <div class="panel-header-row">
             <div class="panel-title">订单详情</div>
             <div class="order-summary-tags">
@@ -356,6 +356,7 @@ import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import CameraPanel from '@/components/CameraPanel.vue'
 import { useCompanyTree } from '@/composables/useCompanyTree'
 import { useChartResize } from '@/composables/useChartResize'
+import { usePermission } from '@/composables/usePermission'
 import { factoryCameras } from '@/utils/cameraMockData'
 import {
   getTodayProduction,
@@ -423,6 +424,7 @@ type KpiFilter = 'barnTotal' | 'abnormalBarn' | 'total' | 'severe' | 'offline' |
 
 const router = useRouter()
 const route = useRoute()
+const { can, PERMISSION } = usePermission()
 
 const {
   selectedFactoryType,
@@ -766,7 +768,7 @@ const goToBarnDetailFromAlarm = (alarm: FactoryAlarm) => {
 
 const goToDeviceDetail = () => router.push('/farm/device-detail')
 const goToAlarmDetail = () => router.push('/farm/alarm-detail')
-const goToDashboard = () => router.push('/farm/dashboard')
+const goToDashboard = () => router.push('/')
 
 const generateRandomData = (count: number, min: number, max: number) =>
   Array.from({ length: count }, () => Math.floor(Math.random() * (max - min + 1)) + min)

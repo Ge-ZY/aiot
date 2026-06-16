@@ -60,7 +60,7 @@
               </template>
             </el-input>
             <el-button :icon="Refresh" @click="refreshData">刷新</el-button>
-            <el-button :icon="Download" @click="exportExcel" type="primary">导出</el-button>
+            <el-button v-if="can(PERMISSION.ALARM_EXPORT)" :icon="Download" @click="exportExcel" type="primary">导出</el-button>
           </div>
         </div>
         <div class="table-container">
@@ -93,6 +93,7 @@ import * as XLSX from 'xlsx'
 import type { EChartsOption } from 'echarts'
 import LayoutWithSidebar from '@/components/LayoutWithSidebar.vue'
 import { useChartResize } from '@/composables/useChartResize'
+import { usePermission } from '@/composables/usePermission'
 
 interface AlarmItem {
   id: number
@@ -103,6 +104,7 @@ interface AlarmItem {
 }
 
 const route = useRoute()
+const { can, PERMISSION } = usePermission()
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 
