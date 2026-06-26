@@ -15,6 +15,20 @@ export const factoryCameras: CameraItem[] = [
   { id: 'CAM-F-004', name: '厂区周界', type: '热成像摄像头', location: '北侧围墙', status: '在线' },
   { id: 'CAM-F-005', name: '污水处理站', type: '枪机摄像头', location: '环保区', status: '离线' },
   { id: 'CAM-F-006', name: '装卸区', type: '枪机摄像头', location: '物流区', status: '在线' },
+  { id: 'CAM-F-007', name: '办公楼入口', type: '半球摄像头', location: '办公区', status: '在线' },
+  { id: 'CAM-F-008', name: '停车场', type: '全景摄像头', location: '南门停车场', status: '在线' },
+  { id: 'CAM-F-009', name: '原料仓库', type: '球型摄像头', location: '原料区', status: '在线' },
+  { id: 'CAM-F-010', name: '成品仓库', type: '枪机摄像头', location: '成品区', status: '在线' },
+  { id: 'CAM-F-011', name: '锅炉房', type: '红外摄像头', location: '动力车间', status: '在线' },
+  { id: 'CAM-F-012', name: '配电室', type: '枪机摄像头', location: '配电间', status: '在线' },
+  { id: 'CAM-F-013', name: '东侧周界', type: '热成像摄像头', location: '东侧围墙', status: '在线' },
+  { id: 'CAM-F-014', name: '西侧周界', type: '热成像摄像头', location: '西侧围墙', status: '离线' },
+  { id: 'CAM-F-015', name: '南门岗亭', type: '半球摄像头', location: '南门', status: '在线' },
+  { id: 'CAM-F-016', name: '北门岗亭', type: '半球摄像头', location: '北门', status: '在线' },
+  { id: 'CAM-F-017', name: '消防通道', type: '枪机摄像头', location: '消防通道', status: '在线' },
+  { id: 'CAM-F-018', name: '食堂后厨', type: '红外摄像头', location: '生活区', status: '在线' },
+  { id: 'CAM-F-019', name: '宿舍区入口', type: '全景摄像头', location: '宿舍区', status: '在线' },
+  { id: 'CAM-F-020', name: '厂区全景', type: '全景摄像头', location: '制高点', status: '在线' },
 ]
 
 /** 舍内摄像头（按栏舍 id 关联） */

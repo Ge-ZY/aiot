@@ -1,0 +1,931 @@
+.barn-detail {
+  width: 100%;
+  min-height: 100%;
+  padding: 20px;
+  padding-bottom: 32px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.header-sub {
+  font-size: 13px;
+  color: #909399;
+}
+
+/* 垂直堆叠 */
+.pillars-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel {
+  background: white;
+  border-radius: 8px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.panel-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-meta {
+  font-size: 12px;
+  color: #909399;
+}
+
+.batch-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+.batch-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.batch-label {
+  font-size: 11px;
+  color: #909399;
+}
+
+.batch-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+/* 养殖与生产 */
+.breeding-production-panel .panel-header-row {
+  margin-bottom: 12px;
+}
+
+.bp-subsection {
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.bp-subsection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bp-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 10px;
+}
+
+.bp-ref-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.bp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.bp-kpi-card {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+
+.bp-kpi-card.primary { background: #ecf5ff; border-color: #d9ecff; }
+.bp-kpi-card.success { background: #f0f9eb; border-color: #e1f3d8; }
+.bp-kpi-card.warn { background: #fdf6ec; border-color: #faecd8; }
+.bp-kpi-card.feed { background: #fff7e6; border-color: #ffe7ba; }
+
+.bp-kpi-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.bp-kpi-card.primary .bp-kpi-value { color: #409eff; }
+.bp-kpi-card.success .bp-kpi-value { color: #67c23a; }
+.bp-kpi-card.warn .bp-kpi-value { color: #e6a23c; }
+
+.bp-kpi-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.bp-empty-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  padding: 8px 0;
+}
+
+.intake-alarm-list {
+  margin-top: 12px;
+}
+
+.intake-alarm-title,
+.bio-task-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.intake-alarm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #fef0f0;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.intake-alarm-level {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.intake-alarm-level.level-严重 { background: #f56c6c; color: #fff; }
+.intake-alarm-level.level-一般 { background: #e6a23c; color: #fff; }
+.intake-alarm-level.level-提示 { background: #909399; color: #fff; }
+
+.intake-alarm-time { color: #909399; flex-shrink: 0; }
+.intake-alarm-msg { color: #606266; }
+
+.bio-prevention-section .bio-block {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #ebeef5;
+}
+
+.bio-prevention-section .bio-block:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.bio-block-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 10px;
+}
+
+.bio-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bio-block-header .bio-block-title {
+  margin-bottom: 0;
+}
+
+.bio-block-meta {
+  font-size: 12px;
+  color: #909399;
+}
+
+.bio-block-meta.warn {
+  color: #e6a23c;
+  font-weight: 500;
+}
+
+.bio-table {
+  width: 100%;
+}
+
+.bio-alarm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bio-alarm-item {
+  padding: 10px 12px;
+  background: #fef0f0;
+  border-radius: 6px;
+  border-left: 3px solid #f56c6c;
+}
+
+.bio-alarm-item.behavior {
+  background: #fdf6ec;
+  border-left-color: #e6a23c;
+}
+
+.bio-alarm-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.bio-alarm-disease {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.bio-alarm-desc {
+  font-size: 12px;
+  color: #606266;
+}
+
+.production-summary {
+  padding-top: 4px;
+}
+
+.prod-block {
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.prod-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.prod-block-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+}
+
+.qc-detail {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.stock-alert-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stock-alert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fdf6ec;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #606266;
+}
+
+.drawing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+.drawing-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.drawing-meta {
+  display: block;
+  font-size: 11px;
+  color: #909399;
+  margin-top: 2px;
+}
+
+.capacity-summary {
+  margin-bottom: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.online-summary {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+.online-rate-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.online-rate-label {
+  font-size: 13px;
+  color: #606266;
+}
+
+.online-rate-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #67c23a;
+}
+
+.online-rate-value.warn {
+  color: #e6a23c;
+}
+
+.online-rate-meta {
+  font-size: 12px;
+  color: #909399;
+}
+
+.offline-section {
+  margin-top: 4px;
+}
+
+.bio-block-title.sub {
+  font-size: 12px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.device-mgmt-panel .bio-block:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.energy-panel .bio-block:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.energy-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.energy-stat-card {
+  padding: 14px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+}
+
+.energy-stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.energy-stat-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.energy-stat-change {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.energy-stat-change.up { color: #f56c6c; }
+.energy-stat-change.down { color: #67c23a; }
+
+.energy-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.energy-stat-value .unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: #909399;
+}
+
+.energy-quota-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #909399;
+  margin-bottom: 6px;
+}
+
+.quota-rate.warn {
+  color: #e6a23c;
+  font-weight: 600;
+}
+
+.bio-alarm-item.energy-alarm {
+  background: #fdf6ec;
+  border-left-color: #e6a23c;
+}
+
+.energy-alarm-threshold {
+  font-size: 11px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.safety-panel .bio-block:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.safety-sub-block {
+  margin-bottom: 12px;
+}
+
+.safety-sub-block:last-child {
+  margin-bottom: 0;
+}
+
+.production-items {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.production-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.production-item-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.production-item-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.env-compliance-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.env-compliance-item {
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.env-compliance-item .label {
+  display: block;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.deviation-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f56c6c;
+}
+
+.batch-chart-wrap {
+  margin-top: 12px;
+}
+
+.batch-chart {
+  height: 220px;
+}
+
+/* 生物 KPI */
+.bio-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.kpi-card.primary {
+  background: #ecf5ff;
+  border-color: #d9ecff;
+}
+
+.kpi-card.highlight {
+  background: #fdf6ec;
+  border-color: #faecd8;
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: bold;
+  color: #409eff;
+  line-height: 1.2;
+}
+
+.kpi-card.primary .kpi-value {
+  color: #409eff;
+}
+
+.kpi-card.highlight .kpi-value {
+  color: #e6a23c;
+}
+
+.kpi-value.warn {
+  color: #f56c6c;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 6px;
+}
+
+/* 舍内专览指标 */
+.special-section {
+  margin-bottom: 16px;
+  padding: 14px;
+  background: #fafafa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+}
+
+.special-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 12px;
+}
+
+.special-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.special-card {
+  background: white;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.special-card.feed {
+  border-color: #d9ecff;
+  background: #ecf5ff;
+}
+
+.special-card.water {
+  border-color: #e1f3d8;
+  background: #f0f9eb;
+}
+
+.special-card.egg {
+  border-color: #faecd8;
+  background: #fdf6ec;
+}
+
+.special-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.special-card.feed .special-value {
+  color: #409eff;
+}
+
+.special-card.water .special-value {
+  color: #67c23a;
+}
+
+.special-card.egg .special-value {
+  color: #e6a23c;
+}
+
+.special-label {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 6px;
+}
+
+/* 环境指标 */
+.env-indicators {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.env-item {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  position: relative;
+}
+
+.env-item.alarm {
+  border-color: #fde2e2;
+  background: #fef0f0;
+}
+
+.env-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 6px;
+}
+
+.env-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.env-value.alarm {
+  color: #f56c6c;
+}
+
+.env-alarm-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* 图表 */
+.sub-chart-wrap {
+  margin-top: 4px;
+}
+
+.sub-chart-title {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.sub-chart {
+  width: 100%;
+  height: 280px;
+}
+
+/* 设备网格 */
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.device-card {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 14px;
+  transition: box-shadow 0.2s;
+}
+
+.device-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.device-card.offline {
+  background: #fafafa;
+  border-color: #e4e7ed;
+  opacity: 0.85;
+}
+
+.device-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.device-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.device-type {
+  font-size: 12px;
+  color: #909399;
+}
+
+.device-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.device-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
+.device-fields.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.device-fields.maintain-fields {
+  grid-template-columns: minmax(0, 0.9fr) minmax(96px, 1.1fr) minmax(0, 0.9fr);
+  gap: 8px 10px;
+}
+
+.device-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.device-field.compact {
+  gap: 3px;
+}
+
+.device-field-label {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #909399;
+  font-weight: 500;
+}
+
+.device-field-value {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #303133;
+  font-weight: 600;
+}
+
+.device-field-value.nowrap {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.device-field-value.mono {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #606266;
+  word-break: break-all;
+}
+
+.device-field-value.highlight {
+  color: #409eff;
+}
+
+.device-section {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.device-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #606266;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #ebeef5;
+}
+
+.device-card.offline .device-field-value.highlight {
+  color: #909399;
+}
+
+@media (max-width: 1200px) {
+  .bio-kpi-grid,
+  .special-grid,
+  .bp-kpi-grid,
+  .production-items,
+  .energy-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .device-fields.cols-3,
+  .device-fields.maintain-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .env-indicators {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .bio-kpi-grid,
+  .special-grid,
+  .bp-kpi-grid,
+  .production-items,
+  .energy-stat-grid,
+  .device-fields,
+  .device-fields.cols-3,
+  .device-fields.maintain-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .env-indicators {
+    grid-template-columns: 1fr 1fr;
+  }
+}

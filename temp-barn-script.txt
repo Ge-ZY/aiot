@@ -1,0 +1,601 @@
+﻿import * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
+import CameraPanel from '@/components/CameraPanel.vue'
+import { useCompanyTree } from '@/composables/useCompanyTree'
+import { useChartResize } from '@/composables/useChartResize'
+import { usePermission } from '@/composables/usePermission'
+import { getBarnCameras } from '@/utils/cameraMockData'
+import {
+  getBatchInfo,
+  getDeviceMaintenance,
+  getBreedingProductionExtra,
+  getFeedingIntake,
+  getIntakeAlarms,
+  getBioPrevention,
+  getBioPreventionTempLabel,
+  getProductionOutput,
+  getFeedProductionDetail,
+  stockAlertTagType,
+  getDeviceFaultAlarms,
+  getEnergyMonitoring,
+  pollutionStatusTagType,
+  energyUsageRate,
+  getProductionSafety,
+  emergencyResourceStatusTag,
+  emergencyHandleStatusTag,
+  type SafetyOverlimitCategory,
+} from '@/utils/farmOperationsMock'
+
+interface BarnOption {
+  id: number
+  name: string
+  status: '姝ｅ父' | '鍛婅'
+}
+
+interface MetricItem {
+  key: string
+  value: string | number
+  label: string
+  valueClass?: string
+  cardClass?: string
+}
+
+interface DeviceItem {
+  id: number
+  name: string
+  type: string
+  uuid: string
+  attribute: string
+  online: boolean
+  controllable: boolean
+  on: boolean
+  extra?: Record<string, string | number>
+  faultCount: number
+  nextMaintainDate: string
+  maintainStatus: '姝ｅ父' | '鍗冲皢鍒版湡' | '宸茶秴鏈?
+}
+
+const router = useRouter()
+const route = useRoute()
+const { can, canAny, PERMISSION } = usePermission()
+const { selectedFactoryType, factoryTypes } = useCompanyTree()
+
+type FactoryType = 'pig' | 'chicken' | 'aquatic' | 'feed'
+
+const factoryType = computed<FactoryType>(() => {
+  const fromQuery = route.query.factoryType as FactoryType | undefined
+  if (fromQuery && ['pig', 'chicken', 'aquatic', 'feed'].includes(fromQuery)) return fromQuery
+  return selectedFactoryType.value
+})
+
+const factoryTypeLabel = computed(() =>
+  factoryTypes.find(t => t.value === factoryType.value)?.label ?? '鏍忚垗'
+)
+
+const barnListByType: Record<FactoryType, BarnOption[]> = {
+  pig: [
+    { id: 1, name: '淇濊偛鑸?', status: '姝ｅ父' },
+    { id: 2, name: '淇濊偛鑸?', status: '姝ｅ父' },
+    { id: 3, name: '鍒嗗ī鑸?', status: '姝ｅ父' },
+    { id: 4, name: '淇濊偛鑸?', status: '鍛婅' },
+    { id: 6, name: '鍒嗗ī鑸?', status: '鍛婅' },
+  ],
+  chicken: [
+    { id: 101, name: '铔嬮浮鑸?', status: '姝ｅ父' },
+    { id: 102, name: '铔嬮浮鑸?', status: '鍛婅' },
+    { id: 103, name: '鑲夐浮鑸?', status: '姝ｅ父' },
+    { id: 104, name: '鑲夐浮鑸?', status: '鍛婅' },
+  ],
+  aquatic: [
+    { id: 201, name: '鍏绘畺姹?', status: '姝ｅ父' },
+    { id: 202, name: '鍏绘畺姹?', status: '姝ｅ父' },
+    { id: 203, name: '鍏绘畺姹?', status: '鍛婅' },
+  ],
+  feed: [
+    { id: 301, name: '鐚ゲ鏂欒溅闂?, status: '姝ｅ父' },
+    { id: 302, name: '楦￠ゲ鏂欒溅闂?, status: '姝ｅ父' },
+    { id: 303, name: '姘翠骇楗叉枡杞﹂棿', status: '鍛婅' },
+    { id: 304, name: '鎴愬搧浠撳簱', status: '姝ｅ父' },
+  ],
+}
+
+const barnList = computed(() => barnListByType[factoryType.value] ?? barnListByType.pig)
+
+const selectedBarn = ref<number>(1)
+const breedingProdTab = ref<'breeding' | 'production'>('breeding')
+
+const chartRef = ref<HTMLElement>()
+const bioChartRef = ref<HTMLElement>()
+const batchChartRef = ref<HTMLElement>()
+let chartInstance: echarts.ECharts | null = null
+let bioChartInstance: echarts.ECharts | null = null
+let batchChartInstance: echarts.ECharts | null = null
+
+const barnName = computed(() => {
+  const barn = barnList.value.find(b => b.id === selectedBarn.value)
+  return barn?.name ?? '鏍忚垗'
+})
+
+const barnStatus = computed(() => {
+  const barn = barnList.value.find(b => b.id === selectedBarn.value)
+  return barn?.status ?? '姝ｅ父'
+})
+
+const barnCameraList = computed(() => getBarnCameras(selectedBarn.value))
+
+const batchInfo = computed(() => getBatchInfo(factoryType.value, barnName.value))
+const breedingExtra = computed(() => getBreedingProductionExtra(factoryType.value))
+const feedingIntake = computed(() => getFeedingIntake(factoryType.value))
+const intakeAlarms = computed(() => getIntakeAlarms(factoryType.value, barnName.value))
+const bioPrevention = computed(() => getBioPrevention(factoryType.value, barnName.value))
+const bioTempLabel = computed(() => getBioPreventionTempLabel(factoryType.value))
+const productionOutput = computed(() => getProductionOutput(factoryType.value))
+const feedProduction = computed(() => getFeedProductionDetail(barnName.value))
+
+const qcTagType = (result: string) => {
+  if (result === '鍚堟牸') return 'success'
+  if (result === '涓嶅悎鏍?) return 'danger'
+  return 'info'
+}
+
+const epidemicStatusTag = (status: string) => {
+  if (status === '宸插叧闂?) return 'success'
+  if (status === '澶勭悊涓?) return 'warning'
+  return 'danger'
+}
+
+const tempStatusTag = (status: string) => {
+  if (status === '姝ｅ父') return 'success'
+  if (status === '鍋忛珮') return 'danger'
+  return 'warning'
+}
+
+const envComplianceRate = computed(() => (barnStatus.value === '鍛婅' ? 82 : 96))
+const envRates = computed(() => ({
+  temp: barnStatus.value === '鍛婅' ? 78 : 94,
+  humidity: barnStatus.value === '鍛婅' ? 85 : 92,
+  gas: barnStatus.value === '鍛婅' ? 72 : 88,
+}))
+const envDeviationDuration = computed(() => barnStatus.value === '鍛婅' ? '2灏忔椂15鍒? : '18鍒?)
+
+const maintainTagType = (s: DeviceItem['maintainStatus']) => {
+  if (s === '宸茶秴鏈?) return 'danger'
+  if (s === '鍗冲皢鍒版湡') return 'warning'
+  return 'success'
+}
+
+const withMaintenance = (devices: Omit<DeviceItem, 'faultCount' | 'nextMaintainDate' | 'maintainStatus'>[]): DeviceItem[] =>
+  devices.map(d => {
+    const m = getDeviceMaintenance(d.online, d.id)
+    return { ...d, ...m }
+  })
+
+const bioData = ref({
+  stock: 1200,
+  todayMortality: 3,
+  totalMortality: 28,
+  mortalityRate: 0.25,
+  todayFeed: 856,
+  avgFeedPerHead: 0.71,
+  todayWater: 12.5,
+  totalFeed: 28500,
+  avgWaterPerHead: 0.01,
+  todayEggs: 8200,
+  feedEggRatio: 2.1,
+  todayBait: 320,
+  todayWaterChange: 45,
+  avgOxygen: 6.8,
+  feedCoefficient: 1.35,
+})
+
+const envIndicators = ref([
+  { label: '骞冲潎娓╁害', value: '24.5掳C', alarm: false },
+  { label: '娓╁害涓€', value: '24.2掳C', alarm: false },
+  { label: '娓╁害浜?, value: '27.8掳C', alarm: true },
+  { label: '鐩稿婀垮害', value: '65%', alarm: false },
+  { label: 'CO鈧傛祿搴?, value: '1250 ppm', alarm: true },
+  { label: '姘ㄦ皵娴撳害', value: '12 ppm', alarm: false },
+  { label: '鑸嶅娓╁害', value: '18掳C', alarm: false },
+  { label: '鍏夌収寮哄害', value: '450 Lux', alarm: false },
+])
+
+const deviceList = ref<DeviceItem[]>(withMaintenance([
+  { id: 1, name: '24瀵稿彉棰戦鏈?, type: '椋庢満', uuid: 'DEV-FAN-024', attribute: '閫氶鎺у埗', online: true, controllable: true, on: true, extra: { runtime: '2灏忔椂30鍒?, mode: 'normal' } },
+  { id: 2, name: '鍚婇《灏忕獥', type: '閫氶绐?, uuid: 'DEV-WIN-001', attribute: '杩涢鎺у埗', online: true, controllable: true, on: true, extra: { opening: 'half', mode: 'auto' } },
+  { id: 3, name: '36瀵搁鏈?, type: '椋庢満', uuid: 'DEV-FAN-036', attribute: '閫氶鎺у埗', online: false, controllable: true, on: false },
+  { id: 4, name: '50瀵搁鏈?, type: '椋庢満', uuid: 'DEV-FAN-050', attribute: '閫氶鎺у埗', online: true, controllable: true, on: true, extra: { runtime: '1灏忔椂15鍒?, mode: 'max' } },
+  { id: 5, name: '姘村笜绯荤粺', type: '闄嶆俯', uuid: 'DEV-WC-001', attribute: '闄嶆俯鎺у埗', online: true, controllable: true, on: false, extra: { waterLevel: 75 } },
+  { id: 6, name: '娓╁害浼犳劅鍣?T01', type: '浼犳劅鍣?, uuid: 'DEV-TEMP-001', attribute: '娓╁害鐩戞祴', online: true, controllable: false, on: true },
+  { id: 7, name: '婀垮害浼犳劅鍣?H01', type: '浼犳劅鍣?, uuid: 'DEV-HUMI-001', attribute: '婀垮害鐩戞祴', online: true, controllable: false, on: true },
+  { id: 8, name: 'CO鈧備紶鎰熷櫒', type: '浼犳劅鍣?, uuid: 'DEV-CO2-001', attribute: '姘斾綋鐩戞祴', online: true, controllable: false, on: true },
+]))
+
+const deviceOnlineCount = computed(() => deviceList.value.filter(d => d.online).length)
+
+const deviceOnlineRate = computed(() => {
+  const total = deviceList.value.length
+  if (!total) return 100
+  return Math.round((deviceOnlineCount.value / total) * 1000) / 10
+})
+
+const offlineDevices = computed(() =>
+  deviceList.value
+    .filter(d => !d.online)
+    .map(d => ({
+      name: d.name,
+      type: d.type,
+      uuid: d.uuid,
+      attribute: d.attribute,
+      offlineSince: d.id === 3 ? '2灏忔椂15鍒? : '45鍒?,
+    }))
+)
+
+const deviceFaultAlarms = computed(() => getDeviceFaultAlarms(factoryType.value, barnName.value))
+const energyMonitoring = computed(() => getEnergyMonitoring(factoryType.value, barnName.value))
+const productionSafety = computed(() => getProductionSafety(factoryType.value, barnName.value))
+
+const overlimitCategories: { key: SafetyOverlimitCategory; label: string }[] = [
+  { key: '鐜帶', label: '鐜帶瓒呴檺' },
+  { key: '璁惧', label: '璁惧瓒呴檺' },
+  { key: '鍏朵粬', label: '鍏朵粬瀹夊叏鎸囨爣' },
+]
+
+const overlimitAlarmsByCategory = (category: SafetyOverlimitCategory) =>
+  productionSafety.value.overlimitAlarms.filter(a => a.category === category)
+
+const fireEmergencyResources = computed(() =>
+  productionSafety.value.emergencyResources.filter(r => r.category === '娑堥槻璁惧')
+)
+
+const supplyEmergencyResources = computed(() =>
+  productionSafety.value.emergencyResources.filter(r => r.category === '搴旀€ョ墿璧?)
+)
+
+const bioKpiItems = computed<MetricItem[]>(() => {
+  const d = bioData.value
+  if (factoryType.value === 'chicken') {
+    return [
+      { key: 'stock', value: d.stock, label: '瀛樻爮锛堢窘锛?, cardClass: 'primary' },
+      { key: 'todayMortality', value: d.todayMortality, label: '浠婃棩姝绘窐', valueClass: 'warn' },
+      { key: 'totalMortality', value: d.totalMortality, label: '绱姝绘窐' },
+      { key: 'mortalityRate', value: `${d.mortalityRate}%`, label: '姝绘窐鐜? },
+    ]
+  }
+  if (factoryType.value === 'aquatic') {
+    return [
+      { key: 'stock', value: `${d.avgOxygen} mg/L`, label: '褰撳墠婧舵哀', cardClass: 'primary' },
+      { key: 'todayMortality', value: d.todayMortality, label: '浠婃棩鎹熻€?, valueClass: 'warn' },
+      { key: 'totalMortality', value: d.totalMortality, label: '绱鎹熻€? },
+      { key: 'mortalityRate', value: `${d.mortalityRate}%`, label: '鎹熻€楃巼' },
+    ]
+  }
+  return [
+    { key: 'stock', value: d.stock, label: '瀛樻爮锛堝ご锛?, cardClass: 'primary' },
+    { key: 'todayMortality', value: d.todayMortality, label: '浠婃棩姝绘窐', valueClass: 'warn' },
+    { key: 'totalMortality', value: d.totalMortality, label: '绱姝绘窐' },
+    { key: 'mortalityRate', value: `${d.mortalityRate}%`, label: '姝绘窐鐜? },
+  ]
+})
+
+const specialSectionTitle = computed(() => {
+  if (factoryType.value === 'pig') return '璧勬簮娑堣€?
+  if (factoryType.value === 'chicken') return '鐢熶骇娑堣€?
+  return '鍏绘畺娑堣€?
+})
+
+const specialMetrics = computed<MetricItem[]>(() => {
+  const d = bioData.value
+  if (factoryType.value === 'pig') {
+    return [
+      { key: 'todayFeed', value: d.todayFeed, label: '浠婃棩楗叉枡娑堣€楋紙kg锛?, cardClass: 'feed' },
+      { key: 'todayWater', value: d.todayWater, label: '浠婃棩鐢ㄦ按娑堣€楋紙m鲁锛?, cardClass: 'water' },
+      { key: 'totalFeed', value: d.totalFeed.toLocaleString(), label: '绱楗叉枡娑堣€楋紙kg锛? },
+      { key: 'avgWaterPerHead', value: d.avgWaterPerHead, label: '澶村潎鐢ㄦ按锛坢鲁锛? },
+    ]
+  }
+  if (factoryType.value === 'chicken') {
+    return [
+      { key: 'todayFeed', value: d.todayFeed, label: '浠婃棩楗叉枡娑堣€楋紙kg锛?, cardClass: 'feed' },
+      { key: 'todayEggs', value: d.todayEggs.toLocaleString(), label: '浠婃棩浜ц泲閲忥紙鏋氾級', cardClass: 'egg' },
+      { key: 'feedEggRatio', value: d.feedEggRatio, label: '鏂欒泲姣? },
+      { key: 'todayWater', value: d.todayWater, label: '浠婃棩楗按閲忥紙m鲁锛?, cardClass: 'water' },
+    ]
+  }
+  return [
+    { key: 'todayBait', value: d.todayBait, label: '浠婃棩鎶曢サ閲忥紙kg锛?, cardClass: 'feed' },
+    { key: 'todayWaterChange', value: d.todayWaterChange, label: '浠婃棩鎹㈡按閲忥紙m鲁锛?, cardClass: 'water' },
+    { key: 'avgOxygen', value: `${d.avgOxygen} mg/L`, label: '骞冲潎婧舵哀' },
+    { key: 'feedCoefficient', value: d.feedCoefficient, label: '楗垫枡绯绘暟' },
+  ]
+})
+
+const bioChartTitle = computed(() => {
+  if (factoryType.value === 'pig') return '杩?鏃ラゲ鏂欐秷鑰?& 鐢ㄦ按娑堣€?
+  if (factoryType.value === 'chicken') return '杩?鏃ラゲ鏂欐秷鑰?& 浜ц泲瓒嬪娍'
+  return '杩?鏃ユ姇楗甸噺 & 鎹㈡按閲?
+})
+
+const extraLabelMap: Record<string, string> = {
+  runtime: '杩愯鏃堕暱',
+  mode: '杩愯妯″紡',
+  opening: '寮€搴?,
+  waterLevel: '姘存睜姘翠綅',
+}
+
+const modeMap: Record<string, string> = {
+  min: '鏈€灏?, normal: '甯歌', max: '鏈€澶?, emergency: '绱ф€?,
+  manual: '鎵嬪姩', auto: '鑷姩', timer: '瀹氭椂',
+  full: '鍏ㄥ紑', close: '鍏ㄥ叧', half: '鍗婂紑', moving: '姝ｅ湪鍔ㄤ綔',
+}
+
+const formatExtraValue = (key: string, val: string | number) => {
+  if (key === 'mode' || key === 'opening') return modeMap[String(val)] ?? val
+  if (key === 'waterLevel') return `${val}%`
+  return val
+}
+
+const sensorReadings: Record<number, Record<string, string>> = {
+  6: { 褰撳墠娓╁害: '24.5掳C' },
+  7: { 褰撳墠婀垮害: '65%' },
+  8: { 'CO鈧傛祿搴?: '1250 ppm' },
+}
+
+const deviceRunningParams = computed(() => {
+  const rows: {
+    deviceName: string
+    deviceType: string
+    paramName: string
+    paramValue: string
+    runStatus: string
+  }[] = []
+
+  for (const d of deviceList.value) {
+    if (!d.online) continue
+    const runStatus = d.controllable ? (d.on ? '寮€' : '鍏?) : '鐩戞祴涓?
+
+    if (d.extra && d.on) {
+      for (const [key, val] of Object.entries(d.extra)) {
+        rows.push({
+          deviceName: d.name,
+          deviceType: d.type,
+          paramName: extraLabelMap[key] || key,
+          paramValue: String(formatExtraValue(key, val)),
+          runStatus,
+        })
+      }
+    }
+
+    const readings = sensorReadings[d.id]
+    if (readings) {
+      for (const [paramName, paramValue] of Object.entries(readings)) {
+        rows.push({ deviceName: d.name, deviceType: d.type, paramName, paramValue, runStatus: '鐩戞祴涓? })
+      }
+    }
+  }
+  return rows
+})
+
+const goBack = () => router.push('/farm')
+
+const generateDateData = (days: number) => {
+  const dates: string[] = []
+  const today = new Date()
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    dates.push(`${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`)
+  }
+  return dates
+}
+
+const rand = (min: number, max: number, fixed?: number) => {
+  const v = min + Math.random() * (max - min)
+  return fixed !== undefined ? Number(v.toFixed(fixed)) : Math.round(v)
+}
+
+const lightChartBase = {
+  tooltip: { trigger: 'axis' as const },
+  grid: { left: '3%', right: '4%', bottom: '14%', top: '12%', containLabel: true },
+  splitLine: { lineStyle: { color: '#ebeef5' } },
+  axisLabel: { color: '#909399', fontSize: 11 },
+  axisLine: { lineStyle: { color: '#dcdfe6' } },
+  legendText: { color: '#606266', fontSize: 12 },
+}
+
+const initBioChart = () => {
+  if (!bioChartRef.value) return
+  bioChartInstance?.dispose()
+  bioChartInstance = echarts.init(bioChartRef.value)
+  const dates = generateDateData(7)
+  const type = factoryType.value
+
+  let legend: string[]
+  let series: EChartsOption['series']
+
+  if (type === 'pig') {
+    legend = ['楗叉枡娑堣€?, '鐢ㄦ按娑堣€?]
+    series = [
+      { name: '楗叉枡娑堣€?, type: 'bar', data: dates.map(() => rand(780, 920)), itemStyle: { color: '#409eff' }, barMaxWidth: 28 },
+      { name: '鐢ㄦ按娑堣€?, type: 'line', yAxisIndex: 1, smooth: true, data: dates.map(() => rand(10, 16, 1)), lineStyle: { color: '#67c23a' }, itemStyle: { color: '#67c23a' } },
+    ]
+  } else if (type === 'chicken') {
+    legend = ['楗叉枡娑堣€?, '浜ц泲閲?]
+    series = [
+      { name: '楗叉枡娑堣€?, type: 'bar', data: dates.map(() => rand(700, 900)), itemStyle: { color: '#409eff' }, barMaxWidth: 28 },
+      { name: '浜ц泲閲?, type: 'line', yAxisIndex: 1, smooth: true, data: dates.map(() => rand(7500, 8800)), lineStyle: { color: '#e6a23c' }, itemStyle: { color: '#e6a23c' } },
+    ]
+  } else {
+    legend = ['鎶曢サ閲?, '鎹㈡按閲?]
+    series = [
+      { name: '鎶曢サ閲?, type: 'bar', data: dates.map(() => rand(280, 360)), itemStyle: { color: '#409eff' }, barMaxWidth: 28 },
+      { name: '鎹㈡按閲?, type: 'line', yAxisIndex: 1, smooth: true, data: dates.map(() => rand(35, 55)), lineStyle: { color: '#67c23a' }, itemStyle: { color: '#67c23a' } },
+    ]
+  }
+
+  const yAxisRightName = type === 'pig' ? 'm鲁' : type === 'chicken' ? '鏋? : 'm鲁'
+
+  const option: EChartsOption = {
+    tooltip: lightChartBase.tooltip,
+    legend: { data: legend, bottom: 0, textStyle: lightChartBase.legendText },
+    grid: lightChartBase.grid,
+    xAxis: {
+      type: 'category', data: dates,
+      axisLabel: lightChartBase.axisLabel,
+      axisLine: lightChartBase.axisLine,
+    },
+    yAxis: [
+      { type: 'value', name: 'kg', nameTextStyle: { color: '#909399', fontSize: 11 }, axisLabel: lightChartBase.axisLabel, splitLine: lightChartBase.splitLine },
+      { type: 'value', name: yAxisRightName, nameTextStyle: { color: '#909399', fontSize: 11 }, axisLabel: lightChartBase.axisLabel, splitLine: { show: false } },
+    ],
+    series,
+  }
+  bioChartInstance.setOption(option)
+}
+
+const initBatchChart = () => {
+  if (!batchChartRef.value) return
+  batchChartInstance?.dispose()
+  batchChartInstance = echarts.init(batchChartRef.value)
+  const days = batchInfo.value.ageDays
+  const count = Math.min(days, 30)
+  const dates: string[] = []
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    dates.push(`${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+  }
+  const stockBase = batchInfo.value.currentStock
+  const stockData = dates.map((_, i) => stockBase + rand(-30, 10) + Math.floor(i * 0.5))
+  const deadData = dates.map(() => rand(0, 4))
+  const option: EChartsOption = {
+    tooltip: lightChartBase.tooltip,
+    legend: { data: ['瀛樻爮', '姝绘窐'], bottom: 0, textStyle: lightChartBase.legendText },
+    grid: lightChartBase.grid,
+    xAxis: { type: 'category', data: dates, axisLabel: { ...lightChartBase.axisLabel, interval: Math.floor(count / 6) }, axisLine: lightChartBase.axisLine },
+    yAxis: [
+      { type: 'value', name: '澶?, axisLabel: lightChartBase.axisLabel, splitLine: lightChartBase.splitLine },
+      { type: 'value', name: '澶?, axisLabel: lightChartBase.axisLabel, splitLine: { show: false } },
+    ],
+    series: [
+      { name: '瀛樻爮', type: 'line', smooth: true, data: stockData, lineStyle: { color: '#409eff', width: 2 }, areaStyle: { color: 'rgba(64,158,255,0.1)' }, itemStyle: { color: '#409eff' } },
+      { name: '姝绘窐', type: 'bar', yAxisIndex: 1, data: deadData, itemStyle: { color: '#f56c6c' }, barMaxWidth: 16 },
+    ],
+  }
+  batchChartInstance.setOption(option)
+}
+
+const initEnvChart = () => {
+  if (!chartRef.value) return
+  if (chartRef.value.offsetWidth === 0) {
+    setTimeout(initEnvChart, 50)
+    return
+  }
+  chartInstance?.dispose()
+  chartInstance = echarts.init(chartRef.value)
+  const dates = generateDateData(30)
+  const avgTemp = dates.map((_, i) => (24 + Math.sin(i / 5) * 1 + (Math.random() - 0.5)).toFixed(1))
+  const humidity = dates.map(() => rand(58, 72))
+  const option: EChartsOption = {
+    tooltip: lightChartBase.tooltip,
+    legend: { data: ['骞冲潎娓╁害', '婀垮害'], bottom: 0, textStyle: lightChartBase.legendText },
+    grid: lightChartBase.grid,
+    xAxis: {
+      type: 'category', boundaryGap: false, data: dates,
+      axisLabel: { ...lightChartBase.axisLabel, interval: 5 },
+      axisLine: lightChartBase.axisLine,
+    },
+    yAxis: [
+      { type: 'value', name: '掳C', nameTextStyle: { color: '#909399', fontSize: 11 }, axisLabel: lightChartBase.axisLabel, splitLine: lightChartBase.splitLine },
+      { type: 'value', name: '%', max: 100, nameTextStyle: { color: '#909399', fontSize: 11 }, axisLabel: lightChartBase.axisLabel, splitLine: { show: false } },
+    ],
+    series: [
+      { name: '骞冲潎娓╁害', type: 'line', smooth: true, data: avgTemp, lineStyle: { color: '#409eff', width: 2 }, areaStyle: { color: 'rgba(64,158,255,0.12)' }, itemStyle: { color: '#409eff' } },
+      { name: '婀垮害', type: 'line', yAxisIndex: 1, smooth: true, data: humidity, lineStyle: { color: '#67c23a', width: 2 }, itemStyle: { color: '#67c23a' } },
+    ],
+  }
+  chartInstance.setOption(option)
+}
+
+const refreshBarnData = () => {
+  bioData.value = {
+    stock: rand(1000, 1300),
+    todayMortality: rand(1, 5),
+    totalMortality: rand(20, 40),
+    mortalityRate: rand(0.1, 0.4, 2),
+    todayFeed: rand(780, 920),
+    avgFeedPerHead: rand(0.6, 0.85, 2),
+    todayWater: rand(10, 16, 1),
+    totalFeed: rand(26000, 30000),
+    avgWaterPerHead: rand(0.008, 0.012, 3),
+    todayEggs: rand(7500, 8800),
+    feedEggRatio: rand(1.9, 2.3, 1),
+    todayBait: rand(280, 360),
+    todayWaterChange: rand(35, 55),
+    avgOxygen: rand(6.2, 7.5, 1),
+    feedCoefficient: rand(1.2, 1.5, 2),
+  }
+
+  deviceList.value = deviceList.value.map(d => ({
+    ...d,
+    online: Math.random() > 0.15,
+    on: d.controllable ? Math.random() > 0.4 : d.on,
+    ...getDeviceMaintenance(Math.random() > 0.15, d.id),
+  }))
+
+  initBioChart()
+  initBatchChart()
+  initEnvChart()
+}
+
+const handleBarnChange = () => refreshBarnData()
+
+const initSelectedBarn = () => {
+  const idFromRoute = Number(route.query.id)
+  const nameFromRoute = route.query.name as string
+  const list = barnList.value
+  if (idFromRoute && list.some(b => b.id === idFromRoute)) {
+    selectedBarn.value = idFromRoute
+    return
+  }
+  if (nameFromRoute) {
+    const barn = list.find(b => b.name === nameFromRoute)
+    if (barn) {
+      selectedBarn.value = barn.id
+      return
+    }
+  }
+  selectedBarn.value = list[0]?.id ?? 1
+}
+
+watch(factoryType, () => {
+  initSelectedBarn()
+  refreshBarnData()
+})
+
+const { resizeCharts, observeContainers } = useChartResize(
+  () => [chartInstance, bioChartInstance, batchChartInstance],
+  () => [chartRef.value, bioChartRef.value, batchChartRef.value]
+)
+
+onMounted(() => {
+  nextTick(() => {
+    setTimeout(() => {
+      initSelectedBarn()
+      initBioChart()
+      initBatchChart()
+      initEnvChart()
+      observeContainers()
+      resizeCharts()
+    }, 100)
+  })
+})
+
+onUnmounted(() => {
+  chartInstance?.dispose()
+  bioChartInstance?.dispose()
+  batchChartInstance?.dispose()
+})
+</script>
+
+<style scoped>
+.barn-detail {

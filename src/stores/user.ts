@@ -39,6 +39,7 @@ export const useUserStore = defineStore('user', () => {
 
   function setRole(newRole: RoleCode) {
     role.value = newRole
+    
     localStorage.setItem(ROLE_STORAGE_KEY, newRole)
   }
 
@@ -57,7 +58,7 @@ export const useUserStore = defineStore('user', () => {
 
   function hasPermission(code: PermissionCode | string): boolean {
     const perms = permissions.value
-    if (perms.includes('*' as PermissionCode)) return true
+    if (perms.length === 1 && (perms as string[])[0] === '*') return true
     return (perms as PermissionCode[]).includes(code as PermissionCode)
   }
 
